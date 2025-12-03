@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: my-market-app
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/ya_market
+    username: root
+    password: root
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      max-lifetime: 120000            # 2 min
+      idle-timeout: 60000             # 1 min
+      leak-detection-threshold: 30000 # 30 sec
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    drop-first: false
+    enabled: true
