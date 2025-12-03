@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlGroup;
 
-import java.util.Objects;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.AFTER_TEST_METHOD;
 import static org.springframework.test.context.jdbc.Sql.ExecutionPhase.BEFORE_TEST_METHOD;
@@ -29,15 +27,27 @@ public class ItemWebControllerIT extends AbstractControllerIT {
         var expectedModel = itemMapper.from(persistedItemEntity);
         var expectedView = "item";
         // when
-        var actualModel = Objects.requireNonNull(
-                mockMvc.perform(get(ITEMS_ROOT + "/" + persistedItemEntity.getId()))
-                        // then
-                        .andExpect(status().isOk())
-                        .andExpect(view().name(expectedView))
-                        .andReturn().getModelAndView()
-        ).getModel();
+        var response = mockMvc.perform(
+                        get(ITEMS_ROOT + "/" + persistedItemEntity.getId())
+                )
+                // then
+                .andExpect(status().isOk())
+                .andExpect(view().name(expectedView))
+                .andReturn().getModelAndView();
 
-        assertThat(actualModel.get(expectedView)).isNotNull();
-        assertThat(actualModel.get(expectedView)).isEqualTo(expectedModel);
+        assertThat(response).isNotNull();
+        assertThat(response.getModel().get(expectedView)).isNotNull();
+        assertThat(response.getModel().get(expectedView)).isEqualTo(expectedModel);
+    }
+
+    @Test
+    void getItem_itemNotFound_fail() throws Exception {
+        // given
+        var expectedView = "error/stub_404.html";
+        // when
+        mockMvc.perform(get(ITEMS_ROOT + "/" + 404))
+                // then
+                .andExpect(status().isNotFound())
+                .andExpect(view().name(expectedView));
     }
 }
