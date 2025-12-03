@@ -1,4 +1,4 @@
-package edu.yandex.project.config.testcontainers;
+package edu.yandex.project.integration.config;
 
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.containers.PostgreSQLContainer;
