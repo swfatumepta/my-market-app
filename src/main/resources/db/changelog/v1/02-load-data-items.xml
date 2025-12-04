@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.28.xsd">
+
+    <changeSet author="ftmpt" id="02-1">
+        <loadData tableName="items" file="db/changelog/v1/data/items.csv">
+            <column name="title" type="TEXT"/>
+            <column name="img_path" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="price" type="BIGINT"/>
+            <column name="count" type="BIGINT"/>
+        </loadData>
+    </changeSet>
+
+</databaseChangeLog>
