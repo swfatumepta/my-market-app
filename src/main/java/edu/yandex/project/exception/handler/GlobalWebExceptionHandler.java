@@ -15,6 +15,6 @@ public class GlobalWebExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     protected String handleItemNotFoundException(ItemNotFoundException exc) {
         log.warn("GlobalWebExceptionHandler::handleItemNotFoundException {} in", exc.toString());
-        return "error/stub_404.html";
+        return "forward:/error/stub_404.html";
     }
 }
