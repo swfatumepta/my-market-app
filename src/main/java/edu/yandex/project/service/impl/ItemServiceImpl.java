@@ -1,12 +1,17 @@
 package edu.yandex.project.service.impl;
 
 import edu.yandex.project.controller.dto.ItemDto;
+import edu.yandex.project.controller.dto.ItemsPageDto;
+import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
 import edu.yandex.project.exception.ItemNotFoundException;
+import edu.yandex.project.factory.ItemPageFactory;
 import edu.yandex.project.mapper.ItemMapper;
 import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +23,21 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
 
     private final ItemMapper itemMapper;
+    private final ItemPageFactory itemPageFactory;
+
+    @Override
+    @Transactional(readOnly = true)
+    public ItemsPageDto findAll(@NonNull ItemsPageableRequestDto pageableRequest) {
+        log.debug("ItemServiceImpl::findAll {} in", pageableRequest);
+        var itemEntitiesPage = itemRepository.findAllByTitleLikeOrDescriptionLike(
+                pageableRequest.search(),
+                pageableRequest.sort().name(),
+                PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
+        );
+        var itemsPageDto = itemPageFactory.create(itemEntitiesPage, pageableRequest);
+        log.debug("ItemServiceImpl::findAll {} out. Result: {}", pageableRequest, itemsPageDto);
+        return itemsPageDto;
+    }
 
     @Override
     @Transactional(readOnly = true)

@@ -1,6 +1,6 @@
 package edu.yandex.project.controller;
 
-import edu.yandex.project.controller.dto.ItemsPageableRequest;
+import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +20,16 @@ public class ItemWebController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public String getItems(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
+    public String getItems(@ModelAttribute ItemsPageableRequestDto requestParameters, Model model) {
         log.info("ItemWebController::getItems {} begins", requestParameters);
+        var itemsPageDto = itemService.findAll(requestParameters);
+
+        model.addAttribute("items", itemsPageDto.items());
+        model.addAttribute("paging", itemsPageDto.pageInfoDto());
+        model.addAttribute("search", itemsPageDto.search());
+        model.addAttribute("sort", itemsPageDto.sort());
         log.info("ItemWebController::getItems {} ends. Result: {}", requestParameters, model);
-        return "forward:/error/stub_404.html";
+        return "items";
     }
 
     @GetMapping("/{itemId}")

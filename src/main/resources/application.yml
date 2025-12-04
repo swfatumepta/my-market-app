@@ -17,3 +17,7 @@ spring:
     change-log: classpath:db/changelog/db.changelog-master.xml
     drop-first: true
     enabled: true
+
+items:
+  view:
+    table.size: 3
