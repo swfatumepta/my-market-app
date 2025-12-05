@@ -2,6 +2,8 @@ package edu.yandex.project.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 
@@ -30,7 +32,8 @@ public class CartItemEntity {
 
     @Column(name = "created_at",
             nullable = false,
-            updatable = false)
+            updatable = false,
+            insertable = false)
     private Instant createdAt;
 
     @ManyToOne
@@ -53,7 +56,39 @@ public class CartItemEntity {
     @ToString.Exclude
     private CartEntity cart;
 
-    // composite key
+    public void incrementCount() {
+        var oneItemPrice = this.getOneItemPrice();
+        ++itemCount;
+        this.totalCost = this.totalCost + oneItemPrice;
+    }
+
+    public void decrementCount() {
+        var oneItemPrice = this.getOneItemPrice();
+        --itemCount;
+        this.totalCost = this.totalCost - oneItemPrice;
+    }
+
+    private Integer getOneItemPrice() {
+        return this.totalCost / this.itemCount;
+    }
+
+    public static CartItemEntity createNew(@NonNull CartEntity cartEntity,
+                                           @NonNull ItemEntity itemEntity,
+                                           @Nullable Integer itemCount) {
+        var compositeId = new CartItemCompositeId(cartEntity.getId(), itemEntity.getId());
+        var computedCount = itemCount != null ? itemCount : 1;
+        return CartItemEntity.builder()
+                .id(compositeId)
+                .itemCount(computedCount)
+                .totalCost(itemEntity.getPrice() * computedCount)
+                .cart(cartEntity)
+                .item(itemEntity)
+                .build();
+    }
+
+    /**
+     * Composite id description class for {@link CartItemEntity}
+     */
     @Embeddable
 
     @AllArgsConstructor

@@ -42,6 +42,7 @@ public class ItemEntity {
 
     @Column(name = "created_at",
             nullable = false,
-            updatable = false)
+            updatable = false,
+            insertable = false)
     private Instant createdAt;
 }
