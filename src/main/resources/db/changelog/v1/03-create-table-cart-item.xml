@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.28.xsd">
+
+    <changeSet author="ftmpt" id="01-1">
+        <createTable tableName="cart_item">
+            <column name="cart_id" type="BIGINT">
+                <constraints nullable="false"
+                             foreignKeyName="fk_cart_item_cart"
+                             referencedTableName="carts"
+                             referencedColumnNames="id"
+                />
+            </column>
+            <column name="item_id" type="BIGINT">
+                <constraints nullable="false"
+                             foreignKeyName="fk_cart_item_item"
+                             referencedTableName="items"
+                             referencedColumnNames="id"
+                />
+            </column>
+            <column name="items_count" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_cost" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <!-- add composite PK -->
+        <addPrimaryKey tableName="cart_item" columnNames="cart_id, item_id" constraintName="cart_item_pkey"/>
+        <!-- add check constraints -->
+        <sql>
+            ALTER TABLE cart_item
+            ADD CONSTRAINT check_items_count_greater_than_zero
+            CHECK (items_count > 0)
+        </sql>
+        <sql>
+            ALTER TABLE cart_item
+            ADD CONSTRAINT check_total_cost_positive
+            CHECK (total_cost >= 0)
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
