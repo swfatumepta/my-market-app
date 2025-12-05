@@ -9,7 +9,6 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "cart_item")
-
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

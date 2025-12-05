@@ -8,7 +8,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "carts")
-
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

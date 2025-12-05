@@ -84,7 +84,6 @@ public class CartServiceImpl implements CartService {
                     throw new CartItemNotFoundException(cartEntity.getId(), itemEntity.getId());
                 }
         );
-
     }
 
     /**
