@@ -21,4 +21,8 @@ public abstract class AbstractProjectException extends RuntimeException {
     public AbstractProjectException(String message) {
         this(DEFAULT_HTTP_STATUS, message);
     }
+
+    public AbstractProjectException() {
+        this(DEFAULT_HTTP_STATUS, DEFAULT_HTTP_STATUS.getReasonPhrase());
+    }
 }
