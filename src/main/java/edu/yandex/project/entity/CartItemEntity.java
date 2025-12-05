@@ -24,11 +24,11 @@ public class CartItemEntity {
 
     @Column(name = "items_count",
             nullable = false)
-    private Integer itemCount;
+    private Long itemCount;
 
     @Column(name = "total_cost",
             nullable = false)
-    private Integer totalCost;
+    private Long totalCost;
 
     @Column(name = "created_at",
             nullable = false,
@@ -68,15 +68,15 @@ public class CartItemEntity {
         this.totalCost = this.totalCost - oneItemPrice;
     }
 
-    private Integer getOneItemPrice() {
+    private Long getOneItemPrice() {
         return this.totalCost / this.itemCount;
     }
 
     public static CartItemEntity createNew(@NonNull CartEntity cartEntity,
                                            @NonNull ItemEntity itemEntity,
-                                           @Nullable Integer itemCount) {
+                                           @Nullable Long itemCount) {
         var compositeId = new CartItemCompositeId(cartEntity.getId(), itemEntity.getId());
-        var computedCount = itemCount != null ? itemCount : 1;
+        var computedCount = itemCount != null ? itemCount : 1L;
         return CartItemEntity.builder()
                 .id(compositeId)
                 .itemCount(computedCount)

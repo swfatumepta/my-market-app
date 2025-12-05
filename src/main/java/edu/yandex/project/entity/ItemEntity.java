@@ -7,7 +7,6 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "items")
-
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -38,7 +37,7 @@ public class ItemEntity {
 
     @Column(name = "price",
             nullable = false)
-    private Integer price;
+    private Long price;
 
     @Column(name = "created_at",
             nullable = false,

@@ -1,8 +1,8 @@
 package edu.yandex.project.controller;
 
-import edu.yandex.project.controller.dto.CartItemActionDto;
-import edu.yandex.project.controller.dto.ItemsPageDto;
-import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
+import edu.yandex.project.controller.dto.CartItemAction;
+import edu.yandex.project.controller.dto.ItemListPageView;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +24,11 @@ public class ItemWebController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public String getItems(@ModelAttribute ItemsPageableRequestDto requestParameters, Model model) {
+    public String getItems(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
         log.info("ItemWebController::getItems {} begins", requestParameters);
-        var itemsPageDto = itemService.findAll(requestParameters);
+        var itemListPageView = itemService.findAll(requestParameters);
 
-        this.putSearchAttributes(itemsPageDto, model);
+        this.putSearchAttributes(itemListPageView, model);
         log.info("ItemWebController::getItems {} ends. Result: {}", requestParameters, model);
         return "items";
     }
@@ -37,31 +37,31 @@ public class ItemWebController {
     @ResponseStatus(HttpStatus.OK)
     public String getItem(@PathVariable Long itemId, Model model) {
         log.info("ItemWebController::getItem {} begins", itemId);
-        var modelData = itemService.findOne(itemId);
+        var itemView = itemService.findOne(itemId);
 
-        model.addAttribute("item", modelData);
+        model.addAttribute("item", itemView);
         log.info("ItemWebController::getItem {} ends. Result: {}", itemId, model);
         return "item";
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    public String updateCart(@ModelAttribute CartItemActionDto cartItemActionDto,
-                             @ModelAttribute ItemsPageableRequestDto requestParameters,
+    public String updateCart(@ModelAttribute CartItemAction cartItemAction,
+                             @ModelAttribute ItemsPageableRequest requestParameters,
                              Model model) {
-        log.info("ItemWebController::updateCart {} begins", cartItemActionDto);
-        cartService.updateCart(cartItemActionDto);
+        log.info("ItemWebController::updateCart {} begins", cartItemAction);
+        cartService.updateCart(cartItemAction);
 
-        var itemsPageDto = itemService.findAll(requestParameters);
-        this.putSearchAttributes(itemsPageDto, model);
-        log.info("ItemWebController::updateCart {} ends. Result: {}", cartItemActionDto, model);
+        var itemListPageView = itemService.findAll(requestParameters);
+        this.putSearchAttributes(itemListPageView, model);
+        log.info("ItemWebController::updateCart {} ends. Result: {}", cartItemAction, model);
         return "items";
     }
 
-    private void putSearchAttributes(ItemsPageDto itemsPageDto, Model model) {
-        model.addAttribute("items", itemsPageDto.items());
-        model.addAttribute("paging", itemsPageDto.pageInfoDto());
-        model.addAttribute("search", itemsPageDto.search());
-        model.addAttribute("sort", itemsPageDto.sort());
+    private void putSearchAttributes(ItemListPageView itemListPageView, Model model) {
+        model.addAttribute("items", itemListPageView.items());
+        model.addAttribute("paging", itemListPageView.pageInfo());
+        model.addAttribute("search", itemListPageView.search());
+        model.addAttribute("sort", itemListPageView.sort());
     }
 }

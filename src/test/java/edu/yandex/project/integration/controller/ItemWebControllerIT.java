@@ -14,13 +14,13 @@ public class ItemWebControllerIT extends AbstractControllerIT {
     @Test
     void getItem_itemFound_success() throws Exception {
         // given
-        var persistedItemEntity = itemRepository.findById(1L).orElseThrow();
+        var itemJoinCartPageView = itemRepository.findByIdWithCartCount(1L).orElseThrow();
 
-        var expectedModel = itemMapper.from(persistedItemEntity);
+        var expectedModel = itemViewMapper.fromItemJoinCartView(itemJoinCartPageView);
         var expectedView = "item";
         // when
         var response = mockMvc.perform(
-                        get(ITEMS_ROOT + "/" + persistedItemEntity.getId())
+                        get(ITEMS_ROOT + "/" + itemJoinCartPageView.id())
                 )
                 // then
                 .andExpect(status().isOk())

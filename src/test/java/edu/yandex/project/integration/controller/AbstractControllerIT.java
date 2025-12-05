@@ -1,7 +1,7 @@
 package edu.yandex.project.integration.controller;
 
 import edu.yandex.project.integration.AbstractDbIT;
-import edu.yandex.project.mapper.ItemMapper;
+import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.repository.ItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,5 +21,5 @@ public class AbstractControllerIT extends AbstractDbIT {
     protected ItemRepository itemRepository;
 
     @Autowired
-    protected ItemMapper itemMapper;
+    protected ItemViewMapper itemViewMapper;
 }

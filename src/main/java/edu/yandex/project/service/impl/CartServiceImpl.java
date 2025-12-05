@@ -1,6 +1,6 @@
 package edu.yandex.project.service.impl;
 
-import edu.yandex.project.controller.dto.CartItemActionDto;
+import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.entity.CartEntity;
 import edu.yandex.project.entity.CartItemEntity;
 import edu.yandex.project.entity.ItemEntity;
@@ -30,21 +30,21 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public void updateCart(@NonNull CartItemActionDto cartItemActionDto) {
-        log.debug("CartServiceImpl::updateCart {} in", cartItemActionDto);
+    public void updateCart(@NonNull CartItemAction cartItemAction) {
+        log.debug("CartServiceImpl::updateCart {} in", cartItemAction);
         var cartEntity = this.getCart();
-        var itemEntity = itemRepository.findById(cartItemActionDto.itemId())
+        var itemEntity = itemRepository.findById(cartItemAction.itemId())
                 .orElseThrow(() -> {
-                    log.error("CartServiceImpl::updateCart ItemEntity.id = {} not found", cartItemActionDto.itemId());
-                    return new ItemNotFoundException(cartItemActionDto.itemId());
+                    log.error("CartServiceImpl::updateCart ItemEntity.id = {} not found", cartItemAction.itemId());
+                    return new ItemNotFoundException(cartItemAction.itemId());
                 });
-        var cartItemId = new CartItemEntity.CartItemCompositeId(cartEntity.getId(), cartItemActionDto.itemId());
+        var cartItemId = new CartItemEntity.CartItemCompositeId(cartEntity.getId(), cartItemAction.itemId());
         var optionalCartItemEntity = cartItemRepository.findById(cartItemId);
-        switch (cartItemActionDto.action()) {
+        switch (cartItemAction.action()) {
             case PLUS -> this.addItem(optionalCartItemEntity, cartEntity, itemEntity);
             case MINUS -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
         }
-        log.debug("CartServiceImpl::updateCart {} out", cartItemActionDto);
+        log.debug("CartServiceImpl::updateCart {} out", cartItemAction);
     }
 
     private void addItem(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
@@ -56,7 +56,7 @@ public class CartServiceImpl implements CartService {
             toBeUpdated = optionalCartItemEntity.get();
             toBeUpdated.incrementCount();
         } else {
-            toBeUpdated = CartItemEntity.createNew(cartEntity, itemEntity, 1);
+            toBeUpdated = CartItemEntity.createNew(cartEntity, itemEntity, 1L);
         }
         cartItemRepository.save(toBeUpdated);
         log.debug("CartServiceImpl::addItem {} out. Added: {}", optionalCartItemEntity.orElse(null), toBeUpdated);

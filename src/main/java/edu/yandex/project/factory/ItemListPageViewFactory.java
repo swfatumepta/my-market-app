@@ -1,11 +1,11 @@
 package edu.yandex.project.factory;
 
-import edu.yandex.project.controller.dto.ItemDto;
-import edu.yandex.project.controller.dto.ItemsPageDto;
-import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
-import edu.yandex.project.controller.dto.PageInfoDto;
-import edu.yandex.project.entity.ItemEntity;
-import edu.yandex.project.mapper.ItemMapper;
+import edu.yandex.project.controller.dto.ItemView;
+import edu.yandex.project.controller.dto.ItemListPageView;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
+import edu.yandex.project.controller.dto.PageInfo;
+import edu.yandex.project.mapper.ItemViewMapper;
+import edu.yandex.project.repository.view.ItemJoinCartPageView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,25 +19,25 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ItemPageFactory {
+public class ItemListPageViewFactory {
 
     @Value("${items.view.table.size:3}")
     private int itemViewTableSize;
 
-    private final ItemMapper itemMapper;
+    private final ItemViewMapper itemViewMapper;
 
-    public ItemsPageDto create(Page<ItemEntity> itemEntitiesPage, @NonNull ItemsPageableRequestDto pageableRequest) {
+    public ItemListPageView create(Page<ItemJoinCartPageView> itemEntitiesPage, @NonNull ItemsPageableRequest pageableRequest) {
         log.debug("ItemPageFactory::create request = {}, fromDb = {} in", pageableRequest, itemEntitiesPage);
-        var builder = ItemsPageDto.builder();
+        var builder = ItemListPageView.builder();
         if (!itemEntitiesPage.getContent().isEmpty()) {
-            var itemDtoList = itemMapper.from(itemEntitiesPage.getContent());
+            var itemViews = itemViewMapper.fromItemJoinCartViews(itemEntitiesPage.getContent());
 
-            var itemWebView = this.splitIntoParts(itemDtoList, itemViewTableSize);
-            this.alignIfNeeded(itemWebView);
+            var itemsViewTable = this.splitIntoParts(itemViews, itemViewTableSize);
+            this.alignIfNeeded(itemsViewTable);
 
             builder
-                    .items(itemWebView)
-                    .pageInfoDto(PageInfoDto.from(itemEntitiesPage))
+                    .items(itemsViewTable)
+                    .pageInfo(PageInfo.from(itemEntitiesPage))
                     .sort(pageableRequest.sort())
                     .search(pageableRequest.search());
         }
@@ -50,18 +50,18 @@ public class ItemPageFactory {
     /**
      * Дополняет последний список в списке заглушками для правильнгого отображения элементов во view
      * <p>
-     * @param itemWebView список списков (таблица) {@link ItemDto}
+     * @param itemWebView список списков (таблица) {@link ItemView}
      */
-    private void alignIfNeeded(ArrayList<List<ItemDto>> itemWebView) {
+    private void alignIfNeeded(ArrayList<List<ItemView>> itemWebView) {
         if (!itemWebView.isEmpty() && itemWebView.getLast().size() < 3) {
             do {
-                itemWebView.getLast().add(ItemDto.createStub());
+                itemWebView.getLast().add(ItemView.createStub());
             } while (itemWebView.getLast().size() < 3);
         }
     }
 
-    private ArrayList<List<ItemDto>> splitIntoParts(List<ItemDto> items, int columns) {
-        var table = new ArrayList<List<ItemDto>>();
+    private ArrayList<List<ItemView>> splitIntoParts(List<ItemView> items, int columns) {
+        var table = new ArrayList<List<ItemView>>();
         for (int i = 0; i < items.size(); i += columns) {
             var row = new ArrayList<>(items.subList(i, Math.min(i + columns, items.size())));
             table.add(row);

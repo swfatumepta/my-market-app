@@ -1,13 +1,13 @@
 package edu.yandex.project.service;
 
-import edu.yandex.project.controller.dto.ItemDto;
-import edu.yandex.project.controller.dto.ItemsPageDto;
-import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
+import edu.yandex.project.controller.dto.ItemView;
+import edu.yandex.project.controller.dto.ItemListPageView;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import org.springframework.lang.NonNull;
 
 public interface ItemService {
 
-    ItemsPageDto findAll(@NonNull ItemsPageableRequestDto pageableRequest);
+    ItemListPageView findAll(@NonNull ItemsPageableRequest pageableRequest);
 
-    ItemDto findOne(long itemId);
+    ItemView findOne(long itemId);
 }

@@ -1,11 +1,11 @@
 package edu.yandex.project.service.impl;
 
-import edu.yandex.project.controller.dto.ItemDto;
-import edu.yandex.project.controller.dto.ItemsPageDto;
-import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
+import edu.yandex.project.controller.dto.ItemView;
+import edu.yandex.project.controller.dto.ItemListPageView;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.exception.ItemNotFoundException;
-import edu.yandex.project.factory.ItemPageFactory;
-import edu.yandex.project.mapper.ItemMapper;
+import edu.yandex.project.factory.ItemListPageViewFactory;
+import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
@@ -22,34 +22,34 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
 
-    private final ItemMapper itemMapper;
-    private final ItemPageFactory itemPageFactory;
+    private final ItemViewMapper itemViewMapper;
+    private final ItemListPageViewFactory itemListPageViewFactory;
 
     @Override
     @Transactional(readOnly = true)
-    public ItemsPageDto findAll(@NonNull ItemsPageableRequestDto pageableRequest) {
+    public ItemListPageView findAll(@NonNull ItemsPageableRequest pageableRequest) {
         log.debug("ItemServiceImpl::findAll {} in", pageableRequest);
-        var itemEntitiesPage = itemRepository.findAllByTitleLikeOrDescriptionLike(
+        var itemJoinCartPageView = itemRepository.findAllWithCartCount(
                 pageableRequest.search(),
                 pageableRequest.sort().name(),
                 PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
         );
-        var itemsPageDto = itemPageFactory.create(itemEntitiesPage, pageableRequest);
-        log.debug("ItemServiceImpl::findAll {} out. Result: {}", pageableRequest, itemsPageDto);
-        return itemsPageDto;
+        var itemListPageView = itemListPageViewFactory.create(itemJoinCartPageView, pageableRequest);
+        log.debug("ItemServiceImpl::findAll {} out. Result: {}", pageableRequest, itemListPageView);
+        return itemListPageView;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ItemDto findOne(long itemId) {
+    public ItemView findOne(long itemId) {
         log.debug("ItemServiceImpl::findOne {} in", itemId);
-        var itemDto = itemRepository.findById(itemId)
-                .map(itemMapper::from)
+        var itemView = itemRepository.findByIdWithCartCount(itemId)
+                .map(itemViewMapper::fromItemJoinCartView)
                 .orElseThrow(() -> {
                     log.error("ItemServiceImpl::findOne ItemEntity.id = {} not found", itemId);
                     return new ItemNotFoundException(itemId);
                 });
-        log.debug("ItemServiceImpl::findOne {} out. Result: {}", itemId, itemDto);
-        return itemDto;
+        log.debug("ItemServiceImpl::findOne {} out. Result: {}", itemId, itemView);
+        return itemView;
     }
 }
