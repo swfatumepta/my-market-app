@@ -1,6 +1,9 @@
 package edu.yandex.project.controller;
 
+import edu.yandex.project.controller.dto.CartItemActionDto;
+import edu.yandex.project.controller.dto.ItemsPageDto;
 import edu.yandex.project.controller.dto.ItemsPageableRequestDto;
+import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class ItemWebController {
 
+    private final CartService cartService;
     private final ItemService itemService;
 
     @GetMapping
@@ -24,10 +28,7 @@ public class ItemWebController {
         log.info("ItemWebController::getItems {} begins", requestParameters);
         var itemsPageDto = itemService.findAll(requestParameters);
 
-        model.addAttribute("items", itemsPageDto.items());
-        model.addAttribute("paging", itemsPageDto.pageInfoDto());
-        model.addAttribute("search", itemsPageDto.search());
-        model.addAttribute("sort", itemsPageDto.sort());
+        this.putSearchAttributes(itemsPageDto, model);
         log.info("ItemWebController::getItems {} ends. Result: {}", requestParameters, model);
         return "items";
     }
@@ -37,8 +38,30 @@ public class ItemWebController {
     public String getItem(@PathVariable Long itemId, Model model) {
         log.info("ItemWebController::getItem {} begins", itemId);
         var modelData = itemService.findOne(itemId);
+
         model.addAttribute("item", modelData);
         log.info("ItemWebController::getItem {} ends. Result: {}", itemId, model);
         return "item";
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.OK)
+    public String updateCart(@ModelAttribute CartItemActionDto cartItemActionDto,
+                             @ModelAttribute ItemsPageableRequestDto requestParameters,
+                             Model model) {
+        log.info("ItemWebController::updateCart {} begins", cartItemActionDto);
+        cartService.updateCart(cartItemActionDto);
+
+        var itemsPageDto = itemService.findAll(requestParameters);
+        this.putSearchAttributes(itemsPageDto, model);
+        log.info("ItemWebController::updateCart {} ends. Result: {}", cartItemActionDto, model);
+        return "items";
+    }
+
+    private void putSearchAttributes(ItemsPageDto itemsPageDto, Model model) {
+        model.addAttribute("items", itemsPageDto.items());
+        model.addAttribute("paging", itemsPageDto.pageInfoDto());
+        model.addAttribute("search", itemsPageDto.search());
+        model.addAttribute("sort", itemsPageDto.sort());
     }
 }
