@@ -40,6 +40,7 @@ public class CartItemEntity {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_cart_item_item")
     )
+    @ToString.Exclude
     private ItemEntity item;
 
     @ManyToOne
@@ -49,6 +50,7 @@ public class CartItemEntity {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_cart_item_cart")
     )
+    @ToString.Exclude
     private CartEntity cart;
 
     // composite key
@@ -59,7 +61,7 @@ public class CartItemEntity {
     @Getter
     @NoArgsConstructor
     @ToString
-    static class CartItemCompositeId {
+    public static class CartItemCompositeId {
         private Long cartId;
         private Long itemId;
     }

@@ -37,5 +37,6 @@ public class CartEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @ToString.Exclude
     private List<CartItemEntity> addedItems;
 }
