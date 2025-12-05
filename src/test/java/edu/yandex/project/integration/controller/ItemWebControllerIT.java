@@ -35,7 +35,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
     @Test
     void getItem_itemNotFound_fail() throws Exception {
         // given
-        var expectedView = "forward:/error/stub_404.html";
+        var expectedView = "/error/404";
         // when
         mockMvc.perform(get(ITEMS_ROOT + "/" + 404))
                 // then
