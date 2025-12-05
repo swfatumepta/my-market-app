@@ -40,10 +40,6 @@ public class ItemEntity {
             nullable = false)
     private Integer price;
 
-    @Column(name = "count",
-            nullable = false)
-    private Integer count;
-
     @Column(name = "created_at",
             nullable = false,
             updatable = false)
