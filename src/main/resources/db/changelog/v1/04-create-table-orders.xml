@@ -5,10 +5,13 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.28.xsd">
 
-    <changeSet author="ftmpt" id="02-create-table-carts">
-        <createTable tableName="carts">
+    <changeSet author="ftmpt" id="04-create-table-orders">
+        <createTable tableName="orders">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="total_cost" type="BIGINT">
+                <constraints nullable="false"/>
             </column>
             <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>

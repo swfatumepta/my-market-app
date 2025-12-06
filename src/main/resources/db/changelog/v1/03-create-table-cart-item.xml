@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.28.xsd">
 
-    <changeSet author="ftmpt" id="01-1">
+    <changeSet author="ftmpt" id="03-create-table-cart-item">
         <createTable tableName="cart_item">
             <column name="cart_id" type="BIGINT">
                 <constraints nullable="false"
