@@ -1,7 +1,7 @@
 package edu.yandex.project.service.impl;
 
 import edu.yandex.project.controller.dto.CartItemAction;
-import edu.yandex.project.controller.dto.CartView;
+import edu.yandex.project.entity.util.CartView;
 import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.entity.CartEntity;
 import edu.yandex.project.entity.CartItemEntity;

@@ -1,4 +1,6 @@
-package edu.yandex.project.controller.dto;
+package edu.yandex.project.entity.util;
+
+import edu.yandex.project.controller.dto.ItemView;
 
 import java.util.List;
 
