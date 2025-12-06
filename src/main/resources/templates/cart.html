@@ -22,6 +22,13 @@
             </div>
         </div>
     </div>
+    <!-- Проверка на пустоту списка товаров -->
+    <div class="row p-2" th:if="${items != null and #lists.isEmpty(items)}">
+        <div class="col text-center">
+            <h4 class="text-muted">Корзина пуста</h4>
+        </div>
+    </div>
+    <!-- Список товаров -->
     <div class="row p-2" th:each="item : ${items}">
         <div class="col">
             <div class="card">
@@ -49,9 +56,10 @@
             </div>
         </div>
     </div>
-    <div class="row p-2">
+    <!-- Форма "Купить" только если есть товары -->
+    <div class="row p-2" th:if="${items != null and !#lists.isEmpty(items)}">
         <div class="col">
-            <form action="/buy" method="post" th:if="${!items.isEmpty()}">
+            <form action="/buy" method="post">
                 <div class="hstack gap-3">
                     <h2 th:text="'Итого: '+${total}+' руб.'"/>
                     <button class="btn btn-warning ms-auto">Купить</button>
