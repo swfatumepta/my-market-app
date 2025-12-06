@@ -14,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
+@ResponseStatus(HttpStatus.OK)
 @RequestMapping("/items")
 @RequiredArgsConstructor
 @Slf4j
@@ -24,7 +25,6 @@ public class ItemWebController {
 
     // showcase
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
     public String getItemsShowcase(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
         log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
         var itemListPageView = itemService.findAll(requestParameters);
@@ -35,7 +35,6 @@ public class ItemWebController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public String updateCartFromItemsShowcase(@ModelAttribute CartItemAction cartItemAction,
                                               @ModelAttribute ItemsPageableRequest requestParameters,
                                               Model model) {
@@ -48,7 +47,6 @@ public class ItemWebController {
 
     // item view
     @GetMapping("/{itemId}")
-    @ResponseStatus(HttpStatus.OK)
     public String getItemView(@PathVariable Long itemId, Model model) {
         log.info("ItemWebController::getItemView {} begins", itemId);
         var itemView = itemService.findOne(itemId);
@@ -59,7 +57,6 @@ public class ItemWebController {
     }
 
     @PostMapping("/{itemId}")
-    @ResponseStatus(HttpStatus.CREATED)
     public String updateCartFromItemView(@PathVariable Long itemId,
                                          @RequestParam("action") CartAction cartItemAction,
                                          Model model) {
