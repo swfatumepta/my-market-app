@@ -12,7 +12,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
     private final static String ITEMS_ROOT = "/items";
 
     @Test
-    void getItem_itemFound_success() throws Exception {
+    void getItemView_itemViewFound_success() throws Exception {
         // given
         var itemJoinCartPageView = itemRepository.findByIdWithCartCount(1L).orElseThrow();
 
@@ -33,7 +33,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
     }
 
     @Test
-    void getItem_itemNotFound_fail() throws Exception {
+    void getItemView_itemViewNotFound_fail() throws Exception {
         // given
         var expectedView = "/error/404";
         // when

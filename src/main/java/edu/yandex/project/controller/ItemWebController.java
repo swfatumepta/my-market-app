@@ -21,43 +21,43 @@ public class ItemWebController {
     private final CartService cartService;
     private final ItemService itemService;
 
+    // showcase
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public String getItems(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
-        log.info("ItemWebController::getItems {} begins", requestParameters);
+    public String getItemsShowcase(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
+        log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
         var itemListPageView = itemService.findAll(requestParameters);
 
-        this.putSearchAttributes(itemListPageView, model);
-        log.info("ItemWebController::getItems {} ends. Result: {}", requestParameters, model);
+        this.fillModel(itemListPageView, model);
+        log.info("ItemWebController::getItemsShowcase {} ends. Result: {}", requestParameters, model);
         return "items";
-    }
-
-    @GetMapping("/{itemId}")
-    @ResponseStatus(HttpStatus.OK)
-    public String getItem(@PathVariable Long itemId, Model model) {
-        log.info("ItemWebController::getItem {} begins", itemId);
-        var itemView = itemService.findOne(itemId);
-
-        model.addAttribute("item", itemView);
-        log.info("ItemWebController::getItem {} ends. Result: {}", itemId, model);
-        return "item";
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
-    public String updateCart(@ModelAttribute CartItemAction cartItemAction,
-                             @ModelAttribute ItemsPageableRequest requestParameters,
-                             Model model) {
-        log.info("ItemWebController::updateCart {} begins", cartItemAction);
+    public String updateCartFromItemsShowcase(@ModelAttribute CartItemAction cartItemAction,
+                                              @ModelAttribute ItemsPageableRequest requestParameters,
+                                              Model model) {
+        log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
         cartService.updateCart(cartItemAction);
-
-        var itemListPageView = itemService.findAll(requestParameters);
-        this.putSearchAttributes(itemListPageView, model);
-        log.info("ItemWebController::updateCart {} ends. Result: {}", cartItemAction, model);
-        return "items";
+        log.info("ItemWebController::updateCartFromItemsShowcase {} ends. Going to call ItemWebController::getItemsShowcase..",
+                cartItemAction);
+        return this.getItemsShowcase(requestParameters, model);
     }
 
-    private void putSearchAttributes(ItemListPageView itemListPageView, Model model) {
+    // item view
+    @GetMapping("/{itemId}")
+    @ResponseStatus(HttpStatus.OK)
+    public String getItemView(@PathVariable Long itemId, Model model) {
+        log.info("ItemWebController::getItemView {} begins", itemId);
+        var itemView = itemService.findOne(itemId);
+
+        model.addAttribute("item", itemView);
+        log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, model);
+        return "item";
+    }
+
+    private void fillModel(ItemListPageView itemListPageView, Model model) {
         model.addAttribute("items", itemListPageView.items());
         model.addAttribute("paging", itemListPageView.pageInfo());
         model.addAttribute("search", itemListPageView.search());
