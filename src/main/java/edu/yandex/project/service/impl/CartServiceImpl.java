@@ -1,12 +1,15 @@
 package edu.yandex.project.service.impl;
 
 import edu.yandex.project.controller.dto.CartItemAction;
+import edu.yandex.project.controller.dto.CartView;
+import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.entity.CartEntity;
 import edu.yandex.project.entity.CartItemEntity;
 import edu.yandex.project.entity.ItemEntity;
 import edu.yandex.project.exception.CartItemNotFoundException;
 import edu.yandex.project.exception.GeneralProjectException;
 import edu.yandex.project.exception.ItemNotFoundException;
+import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.repository.CartItemRepository;
 import edu.yandex.project.repository.CartRepository;
 import edu.yandex.project.repository.ItemRepository;
@@ -28,6 +31,8 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ItemRepository itemRepository;
 
+    private final ItemViewMapper itemViewMapper;
+
     @Override
     @Transactional
     public void updateCart(@NonNull CartItemAction cartItemAction) {
@@ -45,6 +50,29 @@ public class CartServiceImpl implements CartService {
             case MINUS -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
         }
         log.debug("CartServiceImpl::updateCart {} out", cartItemAction);
+    }
+
+    @Override
+    @Transactional
+    public CartView getCartContent() {
+        log.debug("CartServiceImpl::getCartContent in");
+        var cartEntity = this.getCart();
+
+        CartView cartView;
+        var cartItemEntities = cartItemRepository.findAllByCartId(cartEntity.getId());
+        if (!cartItemEntities.isEmpty()) {
+            var itemViews = cartItemEntities.stream()
+                    .map(this::mapToItemView)
+                    .toList();
+            var totalPrice = itemViews.stream()
+                    .map(itemView -> itemView.price() * itemView.count())
+                    .reduce(0L, Long::sum);
+            cartView = new CartView(itemViews, totalPrice);
+        } else {
+            cartView = CartView.createStub();
+        }
+        log.debug("CartServiceImpl::getCartContent in. Result: {}", cartView);
+        return cartView;
     }
 
     private void addItem(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
@@ -84,6 +112,10 @@ public class CartServiceImpl implements CartService {
                     throw new CartItemNotFoundException(cartEntity.getId(), itemEntity.getId());
                 }
         );
+    }
+
+    private ItemView mapToItemView(CartItemEntity cartItemEntity) {
+        return itemViewMapper.fromItemEntityWithCount(cartItemEntity.getItem(), cartItemEntity.getItemCount());
     }
 
     /**

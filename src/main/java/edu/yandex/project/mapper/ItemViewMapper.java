@@ -1,6 +1,7 @@
 package edu.yandex.project.mapper;
 
 import edu.yandex.project.controller.dto.ItemView;
+import edu.yandex.project.entity.ItemEntity;
 import edu.yandex.project.repository.view.ItemJoinCartPageView;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface ItemViewMapper {
+
+    @Mapping(target = "count", source = "count")
+    ItemView fromItemEntityWithCount(ItemEntity mainSource, Long count);
 
     @Mapping(target = "count", source = "inCartCount")
     ItemView fromItemJoinCartView(ItemJoinCartPageView source);
