@@ -47,7 +47,7 @@ public class CartServiceImpl implements CartService {
         var optionalCartItemEntity = cartItemRepository.findById(cartItemId);
         switch (cartItemAction.action()) {
             case PLUS -> this.addItem(optionalCartItemEntity, cartEntity, itemEntity);
-            case MINUS -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
+            case MINUS, DELETE -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
         }
         log.debug("CartServiceImpl::updateCart {} out", cartItemAction);
     }
