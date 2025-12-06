@@ -44,20 +44,6 @@ public class CartItemEntity {
     @EmbeddedId
     private CartItemCompositeId id;
 
-    @Column(name = "items_count",
-            nullable = false)
-    private Long itemCount;
-
-    @Column(name = "total_cost",
-            nullable = false)
-    private Long totalCost;
-
-    @Column(name = "created_at",
-            nullable = false,
-            updatable = false,
-            insertable = false)
-    private Instant createdAt;
-
     @ManyToOne
     @MapsId("itemId")
     @JoinColumn(
@@ -77,6 +63,20 @@ public class CartItemEntity {
     )
     @ToString.Exclude
     private CartEntity cart;
+
+    @Column(name = "items_count",
+            nullable = false)
+    private Long itemCount;
+
+    @Column(name = "total_cost",
+            nullable = false)
+    private Long totalCost;
+
+    @Column(name = "created_at",
+            nullable = false,
+            updatable = false,
+            insertable = false)
+    private Instant createdAt;
 
     public void incrementCount() {
         var oneItemPrice = this.getOneItemPrice();
