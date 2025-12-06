@@ -3,6 +3,7 @@ package edu.yandex.project.controller;
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
+import edu.yandex.project.controller.dto.enums.CartAction;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class ItemWebController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     public String updateCartFromItemsShowcase(@ModelAttribute CartItemAction cartItemAction,
                                               @ModelAttribute ItemsPageableRequest requestParameters,
                                               Model model) {
@@ -55,6 +56,18 @@ public class ItemWebController {
         model.addAttribute("item", itemView);
         log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, model);
         return "item";
+    }
+
+    @PostMapping("/{itemId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public String updateCartFromItemView(@PathVariable Long itemId,
+                                         @RequestParam("action") CartAction cartItemAction,
+                                         Model model) {
+        log.info("ItemWebController::updateCartFromItemView {} begins", cartItemAction);
+        cartService.updateCart(new CartItemAction(cartItemAction, itemId));
+        log.info("ItemWebController::updateCartFromItemView {} ends. Going to call ItemWebController::getItemView..",
+                cartItemAction);
+        return this.getItemView(itemId, model);
     }
 
     private void fillModel(ItemListPageView itemListPageView, Model model) {
