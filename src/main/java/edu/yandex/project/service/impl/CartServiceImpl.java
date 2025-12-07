@@ -81,7 +81,7 @@ public class CartServiceImpl implements CartService {
         log.debug("CartServiceImpl::removeItems {} in", optionalCartItemEntity.orElse(null));
         var cartItemEntity = optionalCartItemEntity.orElseThrow(() -> {
                     log.error("CartServiceImpl::removeItems ItemEntity.id = {} not found in CartEntity.id = {}",
-                            cartEntity.getId(), itemEntity.getId());
+                            itemEntity.getId(), cartEntity.getId());
                     return new GeneralProjectException("Impossible event! Check it ASAP!");
                 }
         );
