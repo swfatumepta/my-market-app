@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 @Slf4j
 public class GlobalWebExceptionHandler {
-    private final static String ERR_MESSAGE_KEY = "errorMessage";
     private final static String ERR_DIR_NAME = "/error/";
+    private final static String ERR_MESSAGE_KEY = "errorMessage";
 
     @ExceptionHandler(AbstractProjectException.class)
     protected String handleItemNotFoundException(AbstractProjectException exc, Model model) {
