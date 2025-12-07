@@ -14,7 +14,7 @@
 - если необхродима повторная загрузка и сброс состояния БД, то переключите параметр spring.liquibase.drop-first в true
   (в [application.yml](src/main/resources/application.yml))
 ---
-3) Для активации remote debug требуется установить значение переменной ENABLE_DEBUG=true в [.env](.env)
+2) Для активации remote debug требуется установить значение переменной ENABLE_DEBUG=true в [.env](.env)
 - так же, включает дополнительное логирование (какое, можно посомтреть в [application.yml](src/main/resources/application.yml))
-4) Remote DEBUG доступен по localhost:8000
+3) Remote DEBUG доступен по localhost:8000
 
