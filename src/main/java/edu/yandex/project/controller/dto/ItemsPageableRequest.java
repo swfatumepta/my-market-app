@@ -1,7 +1,9 @@
 package edu.yandex.project.controller.dto;
 
 import edu.yandex.project.controller.dto.enums.ItemSort;
+import lombok.experimental.FieldNameConstants;
 
+@FieldNameConstants
 public record ItemsPageableRequest(String search,
                                    Integer pageNumber,
                                    Integer pageSize,

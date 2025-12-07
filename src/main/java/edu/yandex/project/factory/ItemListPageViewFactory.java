@@ -37,7 +37,7 @@ public class ItemListPageViewFactory {
 
             builder
                     .items(itemsViewTable)
-                    .pageInfo(PageInfo.from(itemEntitiesPage))
+                    .paging(PageInfo.from(itemEntitiesPage))
                     .sort(pageableRequest.sort())
                     .search(pageableRequest.search());
         }

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/items")
@@ -27,20 +28,27 @@ public class ItemWebController {
         log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
         var itemListPageView = itemService.findAll(requestParameters);
 
-        this.fillModel(itemListPageView, model);
-        log.info("ItemWebController::getItemsShowcase {} ends. Result: {}", requestParameters, model);
+        model.addAttribute(ItemListPageView.Fields.items, itemListPageView.items());
+        model.addAttribute(ItemListPageView.Fields.paging, itemListPageView.paging());
+        model.addAttribute(ItemListPageView.Fields.search, itemListPageView.search());
+        model.addAttribute(ItemListPageView.Fields.sort, itemListPageView.sort());
+        log.info("ItemWebController::getItemsShowcase {} ends. Result: {}", requestParameters, itemListPageView);
         return "items";
     }
 
     @PostMapping
     public String updateCartFromItemsShowcase(@ModelAttribute CartItemAction cartItemAction,
                                               @ModelAttribute ItemsPageableRequest requestParameters,
-                                              Model model) {
+                                              RedirectAttributes redirectAttributes) {
         log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
         cartService.updateCart(cartItemAction);
-        log.info("ItemWebController::updateCartFromItemsShowcase {} ends. Going to call ItemWebController::getItemsShowcase..",
-                cartItemAction);
-        return this.getItemsShowcase(requestParameters, model);
+
+        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber());
+        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.pageSize, requestParameters.pageSize());
+        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.search, requestParameters.search());
+        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.sort, requestParameters.sort());
+        log.info("ItemWebController::updateCartFromItemsShowcase {} ends. Redirecting -> /items ...", cartItemAction);
+        return "redirect:/items";
     }
 
     // item view
@@ -50,25 +58,15 @@ public class ItemWebController {
         var itemView = itemService.findOne(itemId);
 
         model.addAttribute("item", itemView);
-        log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, model);
+        log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, itemView);
         return "item";
     }
 
     @PostMapping("/{itemId}")
-    public String updateCartFromItemView(@PathVariable Long itemId,
-                                         @RequestParam("action") CartAction cartItemAction,
-                                         Model model) {
+    public String updateCartFromItemView(@PathVariable Long itemId, @RequestParam("action") CartAction cartItemAction) {
         log.info("ItemWebController::updateCartFromItemView {} begins", cartItemAction);
         cartService.updateCart(new CartItemAction(cartItemAction, itemId));
-        log.info("ItemWebController::updateCartFromItemView {} ends. Going to call ItemWebController::getItemView..",
-                cartItemAction);
-        return this.getItemView(itemId, model);
-    }
-
-    private void fillModel(ItemListPageView itemListPageView, Model model) {
-        model.addAttribute("items", itemListPageView.items());
-        model.addAttribute("paging", itemListPageView.pageInfo());
-        model.addAttribute("search", itemListPageView.search());
-        model.addAttribute("sort", itemListPageView.sort());
+        log.info("ItemWebController::updateCartFromItemView {} ends. Redirecting -> /item/{} ...", itemId, cartItemAction);
+        return "redirect:/items/" + itemId;
     }
 }
