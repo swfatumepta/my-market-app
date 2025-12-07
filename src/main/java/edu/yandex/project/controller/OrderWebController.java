@@ -22,7 +22,7 @@ public class OrderWebController {
         var orderViews = orderService.findAll();
 
         model.addAttribute("orders", orderViews);
-        log.info("OrderWebController::getOrders ends. Result: {}", model);
+        log.info("OrderWebController::getOrders ends. Result: {}", orderViews);
         return "orders";
     }
 
@@ -33,7 +33,7 @@ public class OrderWebController {
 
         model.addAttribute("order", orderView);
         model.addAttribute("newOrder", newOrder);
-        log.info("OrderWebController::getOrder ends. Result: {}", model);
+        log.info("OrderWebController::getOrder ends. Result: {}", orderView);
         return "order";
     }
 
@@ -44,7 +44,7 @@ public class OrderWebController {
 
         redirectAttributes.addAttribute("id", createdOrderId);
         redirectAttributes.addAttribute("newOrder", true);
-        log.info("OrderWebController::placeAnOrder ends. Redirecting ...");
+        log.info("OrderWebController::placeAnOrder ends. Redirecting -> /orders/{}", createdOrderId);
         return "redirect:/orders/{id}";
     }
 }
