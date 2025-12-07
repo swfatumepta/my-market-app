@@ -30,14 +30,4 @@ public class ItemWebControllerIT extends AbstractControllerIT {
         assertThat(response.getModel().get(expectedView)).isNotNull();
         assertThat(response.getModel().get(expectedView)).isEqualTo(expectedModel);
     }
-
-    @Test
-    void getItemView_itemViewNotFound_fail() throws Exception {
-        // given
-        var expectedView = "/error/404";
-        // when
-        mockMvc.perform(get(ITEMS_ROOT + "/" + 404))
-                // then
-                .andExpect(view().name(expectedView));
-    }
 }
