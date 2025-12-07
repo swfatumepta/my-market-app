@@ -21,6 +21,11 @@ public class ItemEntity {
             strategy = GenerationType.SEQUENCE,
             generator = "items_id_seq"
     )
+    @SequenceGenerator(
+            name = "items_id_seq",
+            sequenceName = "items_id_seq",
+            allocationSize = 1
+    )
     @EqualsAndHashCode.Include
     private Long id;
 

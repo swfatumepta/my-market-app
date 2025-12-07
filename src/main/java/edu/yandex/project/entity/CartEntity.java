@@ -56,6 +56,11 @@ public class CartEntity {
             strategy = GenerationType.SEQUENCE,
             generator = "carts_id_seq"
     )
+    @SequenceGenerator(
+            name = "carts_id_seq",
+            sequenceName = "carts_id_seq",
+            allocationSize = 1
+    )
     @EqualsAndHashCode.Include
     private Long id;
 
