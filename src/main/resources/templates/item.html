@@ -36,7 +36,10 @@
                     <p class="card-text" th:text="${item.description()}"></p>
                     <form th:action="@{${'/items/'+item.id()}}" method="post">
                         <div class="hstack gap-3">
-                            <button type="submit" class="btn btn-outline-secondary" name="action" value="MINUS">-
+                            <button type="submit" class="btn btn-outline-secondary"
+                                    name="action" value="MINUS"
+                                    th:disabled="${item.count() <= 0}">
+                                -
                             </button>
                             <span th:text="${item.count()}"></span>
                             <button type="submit" class="btn btn-outline-secondary" name="action" value="PLUS">+

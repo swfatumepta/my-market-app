@@ -43,7 +43,10 @@
                     <form th:action="@{/cart/items}" method="post">
                         <div class="hstack gap-3">
                             <input type="hidden" name="id" th:value="${item.id()}">
-                            <button type="submit" class="btn btn-outline-secondary" name="action" value="MINUS">-
+                            <button type="submit" class="btn btn-outline-secondary"
+                                    name="action" value="MINUS"
+                                    th:disabled="${item.count() <= 0}">
+                                -
                             </button>
                             <span th:text="${item.count()}"></span>
                             <button type="submit" class="btn btn-outline-secondary" name="action" value="PLUS">+
