@@ -52,7 +52,7 @@ public class ItemListPageViewFactory {
      * <p>
      * @param itemWebView список списков (таблица) {@link ItemView}
      */
-    private void alignIfNeeded(ArrayList<List<ItemView>> itemWebView) {
+    private void alignIfNeeded(List<List<ItemView>> itemWebView) {
         if (!itemWebView.isEmpty() && itemWebView.getLast().size() < 3) {
             do {
                 itemWebView.getLast().add(ItemView.createStub());
