@@ -9,7 +9,7 @@ public interface OrderService {
 
     List<OrderView> findAll();
 
-    Long create();
+    OrderView findOne(@NonNull Long orderId);
 
-    OrderView findOrder(@NonNull Long orderId);
+    Long create();
 }

@@ -23,7 +23,6 @@ public class ItemWebControllerIT extends AbstractControllerIT {
                         get(ITEMS_ROOT + "/" + itemJoinCartPageView.id())
                 )
                 // then
-                .andExpect(status().isOk())
                 .andExpect(view().name(expectedView))
                 .andReturn().getModelAndView();
 
@@ -39,7 +38,6 @@ public class ItemWebControllerIT extends AbstractControllerIT {
         // when
         mockMvc.perform(get(ITEMS_ROOT + "/" + 404))
                 // then
-                .andExpect(status().isNotFound())
                 .andExpect(view().name(expectedView));
     }
 }

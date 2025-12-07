@@ -8,7 +8,6 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
 @Slf4j
@@ -17,7 +16,6 @@ public class GlobalWebExceptionHandler {
     private final static String ERR_DIR_NAME = "/error/";
 
     @ExceptionHandler(AbstractProjectException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     protected String handleItemNotFoundException(AbstractProjectException exc, Model model) {
         log.warn("GlobalWebExceptionHandler::handleItemNotFoundException {} in", exc.toString());
         model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
@@ -26,7 +24,6 @@ public class GlobalWebExceptionHandler {
     }
 
     @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     protected String handleRuntimeException(RuntimeException exc, Model model) {
         log.warn("GlobalWebExceptionHandler::handleRuntimeException {} in", exc.toString());
         model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
@@ -35,7 +32,6 @@ public class GlobalWebExceptionHandler {
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     protected String handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException exc, Model model) {
         log.warn("GlobalWebExceptionHandler::handleHttpRequestMethodNotSupportedException {} in", exc.toString());
         model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
@@ -44,7 +40,6 @@ public class GlobalWebExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     protected String handleMethodArgumentNotValidException(MethodArgumentNotValidException exc, Model model) {
         log.warn("GlobalWebExceptionHandler::handleMethodArgumentNotValidException {} in", exc.toString());
         model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());

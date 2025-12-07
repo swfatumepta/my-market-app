@@ -6,7 +6,6 @@ import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.entity.CartEntity;
 import edu.yandex.project.entity.CartItemEntity;
 import edu.yandex.project.entity.ItemEntity;
-import edu.yandex.project.exception.CartItemNotFoundException;
 import edu.yandex.project.exception.GeneralProjectException;
 import edu.yandex.project.exception.ItemNotFoundException;
 import edu.yandex.project.mapper.ItemViewMapper;
@@ -106,11 +105,8 @@ public class CartServiceImpl implements CartService {
                                 cartItemEntity, cartItemEntity.getItemCount());
                     }
                 },
-                () -> {
-                    log.error("CartServiceImpl::updateCart ItemEntity.id = {} not found in CartEntity.id = {}",
-                            cartEntity.getId(), itemEntity.getId());
-                    throw new CartItemNotFoundException(cartEntity.getId(), itemEntity.getId());
-                }
+                () -> log.warn("CartServiceImpl::updateCart ItemEntity.id = {} not found in CartEntity.id = {}",
+                        cartEntity.getId(), itemEntity.getId())
         );
     }
 

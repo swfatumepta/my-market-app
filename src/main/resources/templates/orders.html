@@ -30,7 +30,7 @@
                 </div>
                 <ul class="list-group list-group-flush" th:each="item : ${order.items()}">
                     <li class="list-group-item"
-                        th:text="${item.title()+' ('+item.count()+' шт.) '+(item.price()*item.count())+' руб.'}"/>
+                        th:text="${item.title()+' ('+item.count()+' шт.) '+item.subtotal()+' руб.'}"/>
                 </ul>
                 <div class="card-footer">
                     <b th:text="${'Сумма: '+order.totalSum()}+' руб.'"></b>

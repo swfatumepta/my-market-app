@@ -44,7 +44,7 @@
                     <li class="list-group-item" th:text="${item.price()}+' руб.'"/>
                 </ul>
                 <div class="card-footer">
-                    <b th:text="${'Сумма: '+item.count()*item.price()}+' руб.'"></b>
+                    <b th:text="${'Сумма: '+item.subtotal()}+' руб.'"></b>
                 </div>
             </div>
         </div>

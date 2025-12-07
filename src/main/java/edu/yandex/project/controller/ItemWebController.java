@@ -8,13 +8,11 @@ import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@ResponseStatus(HttpStatus.OK)
 @RequestMapping("/items")
 @RequiredArgsConstructor
 @Slf4j

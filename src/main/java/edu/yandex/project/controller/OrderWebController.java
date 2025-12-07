@@ -29,7 +29,7 @@ public class OrderWebController {
     @GetMapping("/{id}")
     public String getOrder(@PathVariable Long id, @RequestParam(defaultValue = "false") Boolean newOrder, Model model) {
         log.info("OrderWebController::getOrder begins");
-        var orderView = orderService.findOrder(id);
+        var orderView = orderService.findOne(id);
 
         model.addAttribute("order", orderView);
         model.addAttribute("newOrder", newOrder);
