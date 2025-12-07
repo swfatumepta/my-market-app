@@ -46,7 +46,8 @@ public class CartServiceImpl implements CartService {
         var optionalCartItemEntity = cartItemRepository.findById(cartItemId);
         switch (cartItemAction.action()) {
             case PLUS -> this.addItem(optionalCartItemEntity, cartEntity, itemEntity);
-            case MINUS, DELETE -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
+            case MINUS -> this.removeItem(optionalCartItemEntity, cartEntity, itemEntity);
+            case DELETE -> this.removeItems(optionalCartItemEntity, cartEntity, itemEntity);
         }
         log.debug("CartServiceImpl::updateCart {} out", cartItemAction);
     }
@@ -74,19 +75,18 @@ public class CartServiceImpl implements CartService {
         return cartView;
     }
 
-    private void addItem(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
-                         @NonNull CartEntity cartEntity,
-                         @NonNull ItemEntity itemEntity) {
-        log.debug("CartServiceImpl::addItem {} in", optionalCartItemEntity.orElse(null));
-        CartItemEntity toBeUpdated;
-        if (optionalCartItemEntity.isPresent()) {
-            toBeUpdated = optionalCartItemEntity.get();
-            toBeUpdated.incrementCount();
-        } else {
-            toBeUpdated = CartItemEntity.createNew(cartEntity, itemEntity, 1L);
-        }
-        cartItemRepository.save(toBeUpdated);
-        log.debug("CartServiceImpl::addItem {} out. Added: {}", optionalCartItemEntity.orElse(null), toBeUpdated);
+    private void removeItems(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
+                             @NonNull CartEntity cartEntity,
+                             @NonNull ItemEntity itemEntity) {
+        log.debug("CartServiceImpl::removeItems {} in", optionalCartItemEntity.orElse(null));
+        var cartItemEntity = optionalCartItemEntity.orElseThrow(() -> {
+                    log.error("CartServiceImpl::removeItems ItemEntity.id = {} not found in CartEntity.id = {}",
+                            cartEntity.getId(), itemEntity.getId());
+                    return new GeneralProjectException("Impossible event! Check it ASAP!");
+                }
+        );
+        cartItemRepository.delete(cartItemEntity);
+        log.debug("CartServiceImpl::removeItems {} out. Removed: {}", cartItemEntity, cartItemEntity);
     }
 
     private void removeItem(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
@@ -105,9 +105,24 @@ public class CartServiceImpl implements CartService {
                                 cartItemEntity, cartItemEntity.getItemCount());
                     }
                 },
-                () -> log.warn("CartServiceImpl::updateCart ItemEntity.id = {} not found in CartEntity.id = {}",
+                () -> log.warn("CartServiceImpl::removeItem ItemEntity.id = {} not found in CartEntity.id = {}",
                         cartEntity.getId(), itemEntity.getId())
         );
+    }
+
+    private void addItem(@NonNull Optional<CartItemEntity> optionalCartItemEntity,
+                         @NonNull CartEntity cartEntity,
+                         @NonNull ItemEntity itemEntity) {
+        log.debug("CartServiceImpl::addItem {} in", optionalCartItemEntity.orElse(null));
+        CartItemEntity toBeUpdated;
+        if (optionalCartItemEntity.isPresent()) {
+            toBeUpdated = optionalCartItemEntity.get();
+            toBeUpdated.incrementCount();
+        } else {
+            toBeUpdated = CartItemEntity.createNew(cartEntity, itemEntity, 1L);
+        }
+        cartItemRepository.save(toBeUpdated);
+        log.debug("CartServiceImpl::addItem {} out. Added: {}", optionalCartItemEntity.orElse(null), toBeUpdated);
     }
 
     private ItemView mapToItemView(CartItemEntity cartItemEntity) {
