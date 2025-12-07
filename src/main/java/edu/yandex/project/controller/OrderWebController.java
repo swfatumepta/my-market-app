@@ -16,6 +16,16 @@ public class OrderWebController {
 
     private final OrderService orderService;
 
+    @GetMapping()
+    public String getOrders(Model model) {
+        log.info("OrderWebController::getOrders begins");
+        var orderViews = orderService.findAll();
+
+        model.addAttribute("orders", orderViews);
+        log.info("OrderWebController::getOrders ends. Result: {}", model);
+        return "orders";
+    }
+
     @GetMapping("/{id}")
     public String getOrder(@PathVariable Long id, @RequestParam(defaultValue = "false") Boolean newOrder, Model model) {
         log.info("OrderWebController::getOrder begins");
@@ -23,7 +33,7 @@ public class OrderWebController {
 
         model.addAttribute("order", orderView);
         model.addAttribute("newOrder", newOrder);
-        log.info("OrderWebController::getOrders ends. Result: {}", model);
+        log.info("OrderWebController::getOrder ends. Result: {}", model);
         return "order";
     }
 

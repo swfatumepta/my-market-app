@@ -29,18 +29,25 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public List<OrderView> findAll() {
         log.debug("OrderServiceImpl::findAll in");
-        log.debug("OrderServiceImpl::findAll out. Result: {}", "");
-        return null;
+        var orderViews = orderRepository.findAll().stream()
+                .map(orderEntity -> {
+                    var orderItemViews = orderItemViewMapper.from(orderEntity.getItems());
+                    return new OrderView(orderEntity.getId(), orderEntity.getTotalCost(), orderItemViews);
+                })
+                .toList();
+        log.debug("OrderServiceImpl::findAll out. Result: {}", orderViews);
+        return orderViews;
     }
 
     @Override
     @Transactional
     public Long create() {
         log.debug("OrderServiceImpl::create in");
-        var currentCartEntity = cartRepository.findFirstByIdIsNotNull().orElseThrow(() -> {
-            log.error("OrderServiceImpl::create there are no cart found in database");
-            return new GeneralProjectException("There are no cart found in database!");
-        });
+        var currentCartEntity = cartRepository.findFirstByIdIsNotNull()
+                .orElseThrow(() -> {
+                    log.error("OrderServiceImpl::create there are no cart found in database");
+                    return new GeneralProjectException("There are no cart found in database!");
+                });
         var orderEntity = OrderEntity.createNew(currentCartEntity);
         orderRepository.save(orderEntity);
 
