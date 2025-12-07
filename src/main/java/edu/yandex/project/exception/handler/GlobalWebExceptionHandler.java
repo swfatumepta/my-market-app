@@ -23,14 +23,6 @@ public class GlobalWebExceptionHandler {
         return ERR_DIR_NAME + exc.getHttpStatus().value();
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    protected String handleRuntimeException(RuntimeException exc, Model model) {
-        log.warn("GlobalWebExceptionHandler::handleRuntimeException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
-        log.debug("GlobalWebExceptionHandler::handleRuntimeException {} out", exc.toString());
-        return ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value();
-    }
-
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     protected String handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException exc, Model model) {
         log.warn("GlobalWebExceptionHandler::handleHttpRequestMethodNotSupportedException {} in", exc.toString());
@@ -45,5 +37,13 @@ public class GlobalWebExceptionHandler {
         model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
         log.debug("GlobalWebExceptionHandler::handleMethodArgumentNotValidException {} out", exc.toString());
         return ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    protected String handleRuntimeException(RuntimeException exc, Model model) {
+        log.warn("GlobalWebExceptionHandler::handleRuntimeException {} in", exc.toString());
+        model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
+        log.debug("GlobalWebExceptionHandler::handleRuntimeException {} out", exc.toString());
+        return ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value();
     }
 }
