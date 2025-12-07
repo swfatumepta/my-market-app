@@ -1,4 +1,20 @@
 services:
+  market-app:
+    build: .
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ya_market
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    networks:
+      - ftmpt-market
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:16.11-alpine3.22
     restart: unless-stopped
