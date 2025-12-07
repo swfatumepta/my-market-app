@@ -9,5 +9,4 @@ public interface CartService {
     void updateCart(@NonNull CartItemAction cartItemAction);
 
     CartView getCartContent();
-
 }

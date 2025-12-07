@@ -2,8 +2,10 @@ package edu.yandex.project.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.lang.NonNull;
 
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -33,4 +35,27 @@ public class OrderEntity {
             updatable = false,
             insertable = false)
     private Instant createdAt;
+
+    @OneToMany(
+            mappedBy = "order",
+            cascade = CascadeType.PERSIST,
+            orphanRemoval = true
+    )
+    @ToString.Exclude
+    private List<OrderItemEntity> items;
+
+    public static OrderEntity createNew(@NonNull CartEntity cartEntity) {
+        var orderItemEntities = cartEntity.getAddedItems().stream()
+                .map(OrderItemEntity::createWithEmptyOrder)
+                .toList();
+        var cartTotalCost = orderItemEntities.stream()
+                .map(OrderItemEntity::getSubtotal)
+                .reduce(0L, Long::sum);
+        var orderEntity = OrderEntity.builder()
+                .items(orderItemEntities)
+                .totalCost(cartTotalCost)
+                .build();
+        orderItemEntities.forEach(orderItemEntity -> orderItemEntity.setOrder(orderEntity));
+        return orderEntity;
+    }
 }

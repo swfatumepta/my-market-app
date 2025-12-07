@@ -2,6 +2,7 @@ package edu.yandex.project.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.lang.NonNull;
 
 import java.time.Instant;
 
@@ -20,6 +21,11 @@ public class OrderItemEntity {
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
             generator = "order_item_id_seq"
+    )
+    @SequenceGenerator(
+            name = "order_item_id_seq",
+            sequenceName = "order_item_id_seq",
+            allocationSize = 1
     )
     @EqualsAndHashCode.Include
     private Long id;
@@ -58,4 +64,15 @@ public class OrderItemEntity {
             updatable = false,
             insertable = false)
     private Instant createdAt;
+
+    public static OrderItemEntity createWithEmptyOrder(@NonNull CartItemEntity cartItemEntity) {
+        var itemEntity = cartItemEntity.getItem();
+        return OrderItemEntity.builder()
+                .itemId(itemEntity.getId())
+                .itemTitle(itemEntity.getTitle())
+                .itemPriceAtOrderTime(itemEntity.getPrice())
+                .itemCount(cartItemEntity.getItemCount())
+                .subtotal(cartItemEntity.getTotalCost())
+                .build();
+    }
 }

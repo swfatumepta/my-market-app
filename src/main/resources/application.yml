@@ -18,6 +18,17 @@ spring:
     drop-first: true
     enabled: true
 
+#  jpa:
+#    open-in-view: false
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true
+
 items:
   view:
     table.size: 3
+
+logging:
+  level:
+    edu.yandex.project: DEBUG
