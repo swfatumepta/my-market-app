@@ -2,9 +2,11 @@ package edu.yandex.project.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Controller
 @RequestMapping("/")
@@ -13,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class RedirectController {
 
     @PostMapping("/buy")
-    public String redirectToPlaceAnOrder() {
+    public RedirectView redirectToPlaceAnOrder() {
         log.info("RedirectController::redirectToPlaceAnOrder ...");
-        return "redirect:/orders/place-an-order";
+        var redirectView = new RedirectView("/orders/place-an-order");
+        redirectView.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
+        return redirectView;
     }
 }
