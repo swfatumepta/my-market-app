@@ -18,21 +18,29 @@ spring:
     drop-first: false
     enabled: true
 
-#  jpa:
-#    open-in-view: false
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        format_sql: true
+  jpa:
+    open-in-view: false
 
 items:
   view:
     table.size: 3
 
+---
+spring:
+  config:
+    activate:
+      on-profile: debug
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
 logging:
   level:
     edu.yandex.project: DEBUG
-#    org.springframework.web: DEBUG
-#    org.springframework.web.servlet.DispatcherServlet: DEBUG
-#    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter: DEBUG
-#    org.springframework.web.servlet.view.RedirectView: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter: DEBUG
+    org.springframework.web.servlet.view.RedirectView: DEBUG
