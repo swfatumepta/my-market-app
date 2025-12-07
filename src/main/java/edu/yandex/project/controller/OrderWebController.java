@@ -1,16 +1,14 @@
 package edu.yandex.project.controller;
 
-import ch.qos.logback.core.model.Model;
 import edu.yandex.project.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@ResponseStatus(HttpStatus.OK)
 @RequestMapping("/orders")
 @RequiredArgsConstructor
 @Slf4j
@@ -19,13 +17,15 @@ public class OrderWebController {
     private final OrderService orderService;
 
     @GetMapping("/{id}")
-    public String getOrder(@PathVariable Long id, @RequestParam Boolean newOrder, Model model) {
+    public String getOrder(@PathVariable Long id, @RequestParam(defaultValue = "false") Boolean newOrder, Model model) {
         log.info("OrderWebController::getOrder begins");
+        var orderView = orderService.findOrder(id);
 
+        model.addAttribute("order", orderView);
+        model.addAttribute("newOrder", newOrder);
         log.info("OrderWebController::getOrders ends. Result: {}", model);
-        return "orders";
+        return "order";
     }
-
 
     @PostMapping("/place-an-order")
     public String placeAnOrder(RedirectAttributes redirectAttributes) {

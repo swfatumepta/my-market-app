@@ -10,7 +10,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@ResponseStatus(HttpStatus.OK)
 @RequestMapping("/cart/items")
 @RequiredArgsConstructor
 @Slf4j

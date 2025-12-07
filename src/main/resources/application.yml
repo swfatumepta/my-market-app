@@ -15,7 +15,7 @@ spring:
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
-    drop-first: true
+    drop-first: false
     enabled: true
 
 #  jpa:
@@ -32,3 +32,7 @@ items:
 logging:
   level:
     edu.yandex.project: DEBUG
+#    org.springframework.web: DEBUG
+#    org.springframework.web.servlet.DispatcherServlet: DEBUG
+#    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter: DEBUG
+#    org.springframework.web.servlet.view.RedirectView: DEBUG
