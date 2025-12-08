@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -31,7 +32,9 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
                     CASE WHEN :sortRule = 'PRICE' THEN i.price END ASC,
                     CASE WHEN :sortRule = 'NO' THEN i.id END DESC
             """)
-    Page<ItemJoinCartPageView> findAllWithCartCount(String textFilter, String sortRule, Pageable pageable);
+    Page<ItemJoinCartPageView> findAllWithCartCount(@NonNull String textFilter,
+                                                    @NonNull String sortRule,
+                                                    @NonNull Pageable pageable);
 
     @Query("""
             SELECT new edu.yandex.project.repository.view.ItemJoinCartPageView(
@@ -47,5 +50,5 @@ public interface ItemRepository extends JpaRepository<ItemEntity, Long> {
             WHERE i.id = :id
             GROUP BY i.id, i.title, i.description, i.imgPath, i.price
             """)
-    Optional<ItemJoinCartPageView> findByIdWithCartCount(Long id);
+    Optional<ItemJoinCartPageView> findByIdWithCartCount(@NonNull Long id);
 }
