@@ -1,0 +1,6 @@
+DELETE
+  FROM cart_item
+ WHERE TRUE;
+DELETE
+  FROM carts
+ WHERE id = 555_555;

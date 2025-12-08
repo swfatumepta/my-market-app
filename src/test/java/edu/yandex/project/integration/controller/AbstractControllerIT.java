@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @SpringBootTest
 public class AbstractControllerIT extends AbstractDbIT {
+    protected final Long CART_ID = 555_555L;
+    protected final Long NON_EXISTENT_ID = 777_777L;
 
     @Autowired
     protected MockMvc mockMvc;
