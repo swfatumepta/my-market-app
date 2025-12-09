@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface CartRepository extends JpaRepository<CartEntity, Long> {
 
     // с учетом контекста задачи, данный запрос валиден, потму что подразумевается, что в БД может быть только одна корзина
-    @EntityGraph(value = "CartFullState", type = EntityGraph.EntityGraphType.FETCH)
+    @EntityGraph(value = "CartJoinItems", type = EntityGraph.EntityGraphType.FETCH)
     Optional<CartEntity> findFirstByIdIsNotNull();
 }

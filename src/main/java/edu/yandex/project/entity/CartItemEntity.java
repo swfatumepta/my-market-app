@@ -8,27 +8,8 @@ import org.springframework.lang.Nullable;
 import java.time.Instant;
 
 @NamedEntityGraph(
-        name = "CartView",
-        attributeNodes = {
-                @NamedAttributeNode("itemCount"),
-                @NamedAttributeNode("totalCost"),
-                @NamedAttributeNode(
-                        value = "item",
-                        subgraph = "item.details"
-                )
-        },
-        subgraphs = {
-                @NamedSubgraph(
-                        name = "item.details",
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("title"),
-                                @NamedAttributeNode("description"),
-                                @NamedAttributeNode("imgPath"),
-                                @NamedAttributeNode("price")
-                        }
-                )
-        }
+        name = "CartItemJoinItem",
+        attributeNodes = @NamedAttributeNode("item")
 )
 @Entity
 @Table(name = "cart_item")

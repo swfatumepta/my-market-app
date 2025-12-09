@@ -7,38 +7,16 @@ import java.time.Instant;
 import java.util.List;
 
 @NamedEntityGraph(
-        name = "CartFullState",
-        attributeNodes = {
-                @NamedAttributeNode("id"),
-                @NamedAttributeNode("createdAt"),
-                @NamedAttributeNode(
-                        value = "addedItems",
-                        subgraph = "cartItem.details"
-                )
-        },
-        subgraphs = {
-                @NamedSubgraph(
-                        name = "cartItem.details",
-                        type = CartItemEntity.class,
-                        attributeNodes = {
-                                @NamedAttributeNode("itemCount"),
-                                @NamedAttributeNode("totalCost"),
-                                @NamedAttributeNode(
-                                        value = "item",
-                                        subgraph = "item.details"
-                                )
-                        }
-                ),
-                @NamedSubgraph(
-                        name = "item.details",
-                        type = ItemEntity.class,
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("title"),
-                                @NamedAttributeNode("price")
-                        }
-                )
-        }
+        name = "CartJoinItems",
+        attributeNodes = @NamedAttributeNode(
+                value = "addedItems",
+                subgraph = "JoinItems"
+        ),
+        subgraphs = @NamedSubgraph(
+                name = "JoinItems",
+                type = CartItemEntity.class,
+                attributeNodes = @NamedAttributeNode("item")
+        )
 )
 @Entity
 @Table(name = "carts")

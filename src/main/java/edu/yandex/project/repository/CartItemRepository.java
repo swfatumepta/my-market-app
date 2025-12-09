@@ -11,6 +11,6 @@ import java.util.List;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItemEntity, CartItemEntity.CartItemCompositeId> {
 
-    @EntityGraph(value = "CartView", type = EntityGraph.EntityGraphType.FETCH)
+    @EntityGraph(value = "CartItemJoinItem", type = EntityGraph.EntityGraphType.FETCH)
     List<CartItemEntity> findAllByCartId(@NonNull Long cartId);
 }
