@@ -4,6 +4,7 @@ import edu.yandex.project.controller.CartWebController;
 import edu.yandex.project.controller.ItemWebController;
 import edu.yandex.project.controller.OrderWebController;
 import edu.yandex.project.exception.ItemNotFoundException;
+import edu.yandex.project.exception.OrderNotFoundException;
 import edu.yandex.project.exception.handler.GlobalWebExceptionHandler;
 import edu.yandex.project.factory.ItemListPageViewFactory;
 import edu.yandex.project.mapper.ItemViewMapper;
@@ -32,12 +33,14 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     protected final Long NON_EXISTENT_ID = 123456L;
 
     protected static final String ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN;
+    protected static final String ORDER_NOT_FOUND_ERROR_MESSAGE_PATTERN;
 
     static {
         ERR_DIR_NAME = (String) getField(GlobalWebExceptionHandler.class, "ERR_DIR_NAME");
         ERR_MESSAGE_KEY = (String) getField(GlobalWebExceptionHandler.class, "ERR_MESSAGE_KEY");
 
         ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN = (String) getField(ItemNotFoundException.class, "ERROR_MESSAGE_PATTERN");
+        ORDER_NOT_FOUND_ERROR_MESSAGE_PATTERN = (String) getField(OrderNotFoundException.class, "ERROR_MESSAGE_PATTERN");
     }
 
     @Autowired
@@ -50,7 +53,7 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     @MockitoBean
     protected ItemRepository mockedItemRepository;
     @MockitoBean
-    protected OrderRepository mockedCOrderRepository;
+    protected OrderRepository mockedOrderRepository;
 
     @MockitoBean
     protected ItemListPageViewFactory mockedItemListPageViewFactory;
