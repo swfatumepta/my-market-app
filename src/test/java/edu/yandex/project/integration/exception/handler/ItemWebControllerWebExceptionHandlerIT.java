@@ -1,24 +1,19 @@
 package edu.yandex.project.integration.exception.handler;
 
-import edu.yandex.project.controller.dto.enums.CartAction;
-import edu.yandex.project.entity.CartEntity;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @Tag("ItemWebControllerExceptionHandlerIT")
-public class ItemWebControllerExceptionHandlerIT extends AbstractGlobalExceptionHandlerIT {
+public class ItemWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExceptionHandlerIT {
     private final static String ITEMS_ROOT = "/items";
 
     @Test

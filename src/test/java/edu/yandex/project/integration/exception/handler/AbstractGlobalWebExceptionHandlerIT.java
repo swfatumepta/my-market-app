@@ -25,11 +25,11 @@ import static org.springframework.test.util.ReflectionTestUtils.getField;
 
 @Import({CartServiceImpl.class, ItemServiceImpl.class, OrderServiceImpl.class})
 @WebMvcTest({CartWebController.class, ItemWebController.class, OrderWebController.class})
-public abstract class AbstractGlobalExceptionHandlerIT {
+public abstract class AbstractGlobalWebExceptionHandlerIT {
     protected static final String ERR_DIR_NAME;
     protected static final String ERR_MESSAGE_KEY;
 
-    protected final Long NON_EXISTENT_ID = Long.MIN_VALUE;
+    protected final Long NON_EXISTENT_ID = 123456L;
 
     protected static final String ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN;
 
