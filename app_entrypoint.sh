@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$ENABLE_DEBUG" = "true" ]; then
-  exec java -agentlib:jdwp=transport=dt_socket,server=y,address=*:8000,suspend=n -jar app.jar --spring.profiles.active=prod
+  exec java -agentlib:jdwp=transport=dt_socket,server=y,address=*:8000,suspend=n -jar app.jar --spring.profiles.active=debug
 else
   exec java -jar app.jar
 fi
