@@ -20,7 +20,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Tag("ItemWebControllerIT")
 public class CartWebControllerIT extends AbstractControllerIT {
-    private final static String CART_ROOT = "/cart/items";
 
     @Test
     void getEmptyCart_thenFillItWithItems_success() {

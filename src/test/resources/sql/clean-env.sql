@@ -3,4 +3,15 @@ DELETE
  WHERE TRUE;
 DELETE
   FROM carts
- WHERE id = 555_555;
+ WHERE TRUE;
+
+DELETE
+  FROM order_item
+ WHERE TRUE;
+DELETE
+  FROM orders
+ WHERE TRUE;
+-- reset sequences
+ALTER SEQUENCE carts_id_seq RESTART WITH 1;
+ALTER SEQUENCE order_item_id_seq RESTART WITH 1;
+ALTER SEQUENCE orders_id_seq RESTART WITH 1;

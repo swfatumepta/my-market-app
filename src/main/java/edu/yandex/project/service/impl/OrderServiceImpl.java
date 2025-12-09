@@ -30,7 +30,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public List<OrderView> findAll() {
         log.debug("OrderServiceImpl::findAll in");
-        var orderViews = orderRepository.findAll().stream()
+        var orderViews = orderRepository.findAllWithItems().stream()
                 .map(orderEntity -> {
                     var orderItemViews = orderItemViewMapper.from(orderEntity.getItems());
                     return new OrderView(orderEntity.getId(), orderEntity.getTotalCost(), orderItemViews);
@@ -44,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public OrderView findOne(@NonNull Long orderId) {
         log.debug("OrderServiceImpl::findOne {} in", orderId);
-        var orderEntity = orderRepository.findById(orderId)
+        var orderEntity = orderRepository.findWithItemsById(orderId)
                 .orElseThrow(() -> {
                     log.error("OrderServiceImpl::findOne ItemEntity.id = {} not found", orderId);
                     return new OrderNotFoundException(orderId);
