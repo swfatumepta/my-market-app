@@ -66,10 +66,11 @@ public class ItemWebController {
 
     @PostMapping("/{itemId}")
     public String updateCartFromItemView(@PathVariable Long itemId,
-                                         @Valid @NotNull @RequestParam("action") CartAction cartItemAction) {
-        log.info("ItemWebController::updateCartFromItemView {} begins", cartItemAction);
-        cartService.updateCart(new CartItemAction(cartItemAction, itemId));
-        log.info("ItemWebController::updateCartFromItemView {} ends. Redirecting -> /item/{} ...", itemId, cartItemAction);
+                                         @Valid @NotNull @RequestParam("action") CartAction cartAction) {
+        log.info("ItemWebController::updateCartFromItemView {}, {} begins", itemId, cartAction);
+        cartService.updateCart(new CartItemAction(cartAction, itemId));
+        log.info("ItemWebController::updateCartFromItemView {}, {} ends. Redirecting -> /item/{} ...",
+                itemId, cartAction, itemId);
         return "redirect:/items/" + itemId;
     }
 }
