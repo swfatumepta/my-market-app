@@ -6,6 +6,8 @@ import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.enums.CartAction;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -24,7 +26,7 @@ public class ItemWebController {
 
     // showcase
     @GetMapping
-    public String getItemsShowcase(@ModelAttribute ItemsPageableRequest requestParameters, Model model) {
+    public String getItemsShowcase(@Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters, Model model) {
         log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
         var itemListPageView = itemService.findAll(requestParameters);
 
@@ -37,8 +39,8 @@ public class ItemWebController {
     }
 
     @PostMapping
-    public String updateCartFromItemsShowcase(@ModelAttribute CartItemAction cartItemAction,
-                                              @ModelAttribute ItemsPageableRequest requestParameters,
+    public String updateCartFromItemsShowcase(@Valid @NotNull @ModelAttribute CartItemAction cartItemAction,
+                                              @Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters,
                                               RedirectAttributes redirectAttributes) {
         log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
         cartService.updateCart(cartItemAction);
@@ -63,7 +65,8 @@ public class ItemWebController {
     }
 
     @PostMapping("/{itemId}")
-    public String updateCartFromItemView(@PathVariable Long itemId, @RequestParam("action") CartAction cartItemAction) {
+    public String updateCartFromItemView(@PathVariable Long itemId,
+                                         @Valid @NotNull @RequestParam("action") CartAction cartItemAction) {
         log.info("ItemWebController::updateCartFromItemView {} begins", cartItemAction);
         cartService.updateCart(new CartItemAction(cartItemAction, itemId));
         log.info("ItemWebController::updateCartFromItemView {} ends. Redirecting -> /item/{} ...", itemId, cartItemAction);
