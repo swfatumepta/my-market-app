@@ -26,24 +26,26 @@ public class ItemListPageViewFactory {
 
     private final ItemViewMapper itemViewMapper;
 
-    public ItemListPageView create(Page<ItemJoinCartPageView> itemEntitiesPage, @NonNull ItemsPageableRequest pageableRequest) {
-        log.debug("ItemPageFactory::create request = {}, fromDb = {} in", pageableRequest, itemEntitiesPage);
-        var builder = ItemListPageView.builder();
-        if (!itemEntitiesPage.getContent().isEmpty()) {
-            var itemViews = itemViewMapper.fromItemJoinCartViews(itemEntitiesPage.getContent());
+    public ItemListPageView create(@NonNull Page<ItemJoinCartPageView> itemJoinCartPageViews,
+                                   @NonNull ItemsPageableRequest pageableRequest) {
+        log.debug("ItemPageFactory::create request = {}, fromDb = {} in", pageableRequest, itemJoinCartPageViews);
+        var builder = ItemListPageView.builder()
+                .sort(pageableRequest.sort())
+                .search(pageableRequest.search())
+                .paging(PageInfo.from(itemJoinCartPageViews));
+        if (!itemJoinCartPageViews.getContent().isEmpty()) {
+            var itemViews = itemViewMapper.fromItemJoinCartViews(itemJoinCartPageViews.getContent());
 
             var itemsViewTable = this.splitIntoParts(itemViews, itemViewTableSize);
             this.alignIfNeeded(itemsViewTable);
 
-            builder
-                    .items(itemsViewTable)
-                    .paging(PageInfo.from(itemEntitiesPage))
-                    .sort(pageableRequest.sort())
-                    .search(pageableRequest.search());
+            builder.items(itemsViewTable);
+        } else {
+            builder.items(List.of());
         }
         var built = builder.build();
         log.debug("ItemPageFactory::create request = {}, fromDb = {} out. Result: {}",
-                pageableRequest, itemEntitiesPage, built);
+                pageableRequest, itemJoinCartPageViews, built);
         return built;
     }
 

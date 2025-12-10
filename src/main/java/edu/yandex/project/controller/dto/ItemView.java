@@ -1,5 +1,10 @@
 package edu.yandex.project.controller.dto;
 
+import lombok.Builder;
+import lombok.experimental.FieldNameConstants;
+
+@Builder
+@FieldNameConstants
 public record ItemView(Long id,
                        String title,
                        String description,
