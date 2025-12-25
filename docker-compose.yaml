@@ -3,9 +3,10 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ya_market
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/ya_market
+      - SPRING_JDBC_URL=jdbc:postgresql://postgres:5432/ya_market
+      - SPRING_DBC_USERNAME=root
+      - SPRING_DBC_PASSWORD=root
       - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
     ports:
       - "8080:8080"
