@@ -43,6 +43,8 @@ public class AbstractControllerIT extends AbstractDbIT {
     protected ItemPageableRepository itemPageableRepository;
     @Autowired
     protected OrderRepository orderRepository;
+    @Autowired
+    protected OrderItemRepository orderItemRepository;
 
     @BeforeEach
     protected void dropData() {

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,8 @@ public class OrderWebControllerIT extends AbstractControllerIT {
     @Test
     void getOrders_inCaseNoOrders_success() {
         // given
+        assertThat(orderRepository.findAll().collectList().block()).isEmpty();
+        assertThat(orderItemRepository.findAll().collectList().block()).isEmpty();
         // when
         webTestClient.get()
                 .uri(ORDERS_ROOT)
@@ -47,7 +50,7 @@ public class OrderWebControllerIT extends AbstractControllerIT {
         var cartItems = getCartItems();
         assertThat(cartItems).isNotEmpty();
 
-        var cartItemTotal = cartItems.stream()
+        var cartTotalCost = cartItems.stream()
                 .map(CartItem::getTotalCost)
                 .reduce(0L, Long::sum);
 
@@ -72,8 +75,10 @@ public class OrderWebControllerIT extends AbstractControllerIT {
                         );
                         assertThat(htmlView).contains(line);
                     });
-                    assertThat(htmlView).contains("<b>Сумма: " + cartItemTotal + " руб.</b>");
+                    assertThat(htmlView).contains("<b>Сумма: " + cartTotalCost + " руб.</b>");
                 });
+        this.validateOrderDbState(cartTotalCost, cartItems);
+
         assertThat(cartRepository.count().block()).isEqualTo(0);    // cart must be deleted after order creation
     }
 
@@ -128,6 +133,23 @@ public class OrderWebControllerIT extends AbstractControllerIT {
                 .exchange()
                 .expectStatus().is3xxRedirection()
                 .expectHeader().value("Location", containsString(ORDERS_ROOT + "/1?newOrder=true"));
+    }
+
+    private void validateOrderDbState(Long cartTotalCost, List<CartItem> cartItems) {
+        var orders = orderRepository.findAll()
+                .collectList()
+                .block();
+        assertThat(orders)
+                .isNotEmpty()
+                .hasSize(1);
+        var order = orders.getFirst();
+        assertThat(order.getTotalCost()).isEqualTo(cartTotalCost);
+        var orderItems = orderItemRepository.findAllByOrderId(order.getId())
+                .collectList()
+                .block();
+        assertThat(orderItems)
+                .isNotEmpty()
+                .hasSize(cartItems.size());
     }
 
     private @NotNull Map<Long, Item> getItemsMap(Collection<CartItem> cartItems) {
