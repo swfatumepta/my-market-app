@@ -1,17 +1,18 @@
 package edu.yandex.project.factory;
 
-import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemListPageView;
+import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.PageInfo;
 import edu.yandex.project.mapper.ItemViewMapper;
-import edu.yandex.project.repository.view.ItemJoinCartPageView;
+import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+import reactor.util.function.Tuple2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,10 @@ public class ItemListPageViewFactory {
         log.debug("ItemPageFactory::create request = {}, fromDb = {} out. Result: {}",
                 pageableRequest, itemJoinCartPageViews, built);
         return built;
+    }
+
+    public ItemListPageView create(@NonNull Tuple2<Page<ItemJoinCartPageView>, ItemsPageableRequest> viewWitRequest) {
+        return this.create(viewWitRequest.getT1(), viewWitRequest.getT2());
     }
 
     /**
