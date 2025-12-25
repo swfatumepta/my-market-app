@@ -1,48 +1,62 @@
 package edu.yandex.project.integration.exception.handler;
 
+import edu.yandex.project.domain.Cart;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.text.MessageFormat;
-import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @Tag("OrderWebControllerExceptionHandlerIT")
 public class OrderWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExceptionHandlerIT {
     private final static String ORDERS_ROOT = "/orders";
 
     @Test
-    void getOrder_handleOrderNotFoundException_inCaseNonExistentOrderId() throws Exception {
+    void getOrder_handleOrderNotFoundException_inCaseNonExistentOrderId() {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.NOT_FOUND.value();
-        var expectedErrorMessage = MessageFormat.format(ORDER_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
+        var viewIdentifyingText = "404 - NOT_FOUND";
+        var expectedMessages = MessageFormat.format(ORDER_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
         // when
-        when(mockedOrderRepository.findWithItemsById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(mockedOrderRepository.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());
 
-        mockMvc.perform(get(ORDERS_ROOT + "/" + NON_EXISTENT_ID))
+        webTestClient.get()
+                .uri(ORDERS_ROOT + "/" + NON_EXISTENT_ID)
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attribute(ERR_MESSAGE_KEY, expectedErrorMessage));
+                .expectStatus().isNotFound()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assertThat(html).contains(viewIdentifyingText);
+                    assertThat(html).contains(expectedMessages);
+                });
     }
 
     @Test
-    void placeAnOrder_handleGeneralProjectException_inCaseTryToPlaceAnOrderWithNoCartPresent() throws Exception {
+    void placeAnOrder_handleGeneralProjectException_inCaseTryToPlaceAnOrderWithNoCartPresent() {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value();
-        var expectedErrorMessage = "There are no cart found in database!";
+        var viewIdentifyingText = "500 - INTERNAL_SERVER_ERROR";
+        var expectedMessages = "Cart is empty";
         // when
-        when(mockedCartRepository.findFirstByIdIsNotNull()).thenReturn(Optional.empty());
+        when(mockedCartRepository.findAll()).thenReturn(Flux.just(new Cart()));
+        when(mockedCartItemRepository.findAllByCartId(any())).thenReturn(Flux.empty());
 
-        mockMvc.perform(post(ORDERS_ROOT + "/place-an-order"))
+        webTestClient.post()
+                .uri(ORDERS_ROOT + "/place-an-order")
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attribute(ERR_MESSAGE_KEY, expectedErrorMessage));
+                .expectStatus().is5xxServerError()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assertThat(html).contains(viewIdentifyingText);
+                    assertThat(html).contains(expectedMessages);
+                });
 
         verifyNoInteractions(mockedOrderRepository);
         verify(mockedCartRepository, never()).save(any());

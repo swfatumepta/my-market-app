@@ -1,343 +1,370 @@
 package edu.yandex.project.integration.controller;
 
-import edu.yandex.project.controller.dto.*;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.enums.CartAction;
-import edu.yandex.project.controller.dto.enums.ItemSort;
-import lombok.SneakyThrows;
+import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.util.LinkedMultiValueMap;
 
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.containsString;
 
 @Tag("ItemWebControllerIT")
 public class ItemWebControllerIT extends AbstractControllerIT {
     private final static String ITEMS_ROOT = "/items";
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void getItemsShowcase_inCaseDefaultRequestParameters_thenGetNextPage_shouldReturn10ItemsIn2Pages() {
-        // given
-        // ***
-        // default request:
-        // search filter = "" (empty string -> matches all items)
-        // page number = 0 (first page)
-        // page size = 5 (should return 6 items, where 6th is stub with id = -1)
-        // sort = NO (random order)
-        // ***
-        var allItemsFromDb = itemRepository.findAllWithCartCount("", ItemSort.NO.name(), Pageable.unpaged())
-                .getContent();
-        var allItemViewsMap = itemViewMapper.fromItemJoinCartViews(allItemsFromDb).stream()
-                .collect(Collectors.toMap(ItemView::id, itemView -> itemView));
-        // when
-        // for null fields default values must be set
-        var response = this.validateAndGetItemsShowcase(new ItemsPageableRequest(null, null, null, null));
-        // then
-        var firstPageInfo = validateAndGetPageInfo(response, 5, 0, false, true);
+    @Nested
+    class Showcase {
+        @Test
+        void getItemsShowcase_withDefaultRequestParameters_shouldReturnItemsViewWithRequiredElements() {
+            // given
+            var defaultQuery = new ItemsPageableRequest(null, null, null, null);
+            var expectedItems = getItemJoinCartPageViews(defaultQuery);
+            assertThat(expectedItems).hasSize(defaultQuery.pageSize());
 
-        var itemsViewTable = (List<List<ItemView>>) response.getModel().get(ItemListPageView.Fields.items);
-        assertThat(itemsViewTable)
-                .isNotNull()
-                .isNotEmpty()
-                .hasSize(2);    // 3 items & 2 items + 1 stub
+            var toBeChecked = DynamicParametersToBeChecked.from(expectedItems);
+            // when
+            webTestClient.get()
+                    .uri(ITEMS_ROOT)
+                    .exchange()
+                    // then
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                    .expectBody(String.class).value(htmlView -> {
+                        // top elements
+                        assertThat(htmlView).contains(
+                                "<span class=\"badge text-bg-success\">Витрина магазина</span>",
+                                "<a href=\"/orders\" class=\"btn btn-secondary ms-auto bi bi-file-earmark-text\">Заказы</a>",
+                                "<a href=\"/cart/items\" class=\"btn btn-secondary bi bi-cart4\">Корзина</a>"
+                        );
+                        assertThat(htmlView).contains(
+                                "<option value=\"5\" selected=\"selected\">5</option>",  // pageSize = 5
+                                "<span>Страница: 1</span>",
+                                "form=\"main\">&rarr;"  // there are another pages
+                        );
+                        validateItemInCartSign(htmlView, false);
+                        validateShowcaseDynamicParameters(htmlView, toBeChecked);
+                    });
+        }
 
-        var firstRow = itemsViewTable.getFirst();
-        // remove stub before validations
-        var secondRow = itemsViewTable.getLast().stream()
-                .filter(itemView -> itemView.id() > 0)
-                .toList();
-        assertThat(secondRow).hasSize(2);
+        @Test
+        void getItemsShowcase_withSearchFilterByTitle() {
+            // given
+            var queryWithSearchFilter = new ItemsPageableRequest("Телевизор 4K Smart TV", null, 100, null);
+            var requestFormData = createPageableRequestQuery(queryWithSearchFilter);
 
-        var responseItems = new HashSet<>(firstRow);
-        responseItems.addAll(secondRow);
-        // ***
-        // when
-        response = this.validateAndGetItemsShowcase(
-                new ItemsPageableRequest(null, firstPageInfo.pageNumber() + 1, firstPageInfo.pageSize(), null)
-        );
-        // then
-        // validate second page
-        validateAndGetPageInfo(response, 5, 1, true, true);
+            var expectedItem = getItemJoinCartPageViews(queryWithSearchFilter);
+            assertThat(expectedItem).hasSize(1);
 
-        itemsViewTable = (List<List<ItemView>>) response.getModel().get(ItemListPageView.Fields.items);
-        assertThat(itemsViewTable)
-                .isNotNull()
-                .isNotEmpty()
-                .hasSize(2);    // 3 items & 2 items + 1 stub
+            var toBeChecked = DynamicParametersToBeChecked.from(expectedItem);
+            // when
+            webTestClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(ITEMS_ROOT)
+                            .queryParams(requestFormData)
+                            .build())
+                    .exchange()
+                    // then
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                    .expectBody(String.class).value(htmlView -> {
+                        var chosenPageSize = queryWithSearchFilter.pageSize();
+                        assertThat(htmlView).contains("<option value=\"" + chosenPageSize + "\" selected=\"selected\">" + chosenPageSize + "</option>");
+                        assertThat(htmlView).contains("<span>Страница: 1</span>");
+                        assertThat(htmlView).doesNotContain("form=\"main\">&rarr;");  // there is only one page
 
-        firstRow = itemsViewTable.getFirst();
-        // remove stub before validations
-        secondRow = itemsViewTable.getLast().stream()
-                .filter(itemView -> itemView.id() > 0)
-                .toList();
-        assertThat(secondRow).hasSize(2);
+                        validateItemInCartSign(htmlView, false);
+                        validateShowcaseDynamicParameters(htmlView, toBeChecked);
+                    });
+        }
 
-        responseItems.addAll(firstRow);
-        responseItems.addAll(secondRow);
-        // **
-        // validate received items
-        assertThat(responseItems).hasSize(6 + 6 - 1 - 1);   // 1stPage.items + 2ndPage.items + 2 stubs (alignment x2)
-        responseItems.forEach(responseItem -> assertThat(responseItem).isEqualTo(allItemViewsMap.get(responseItem.id())));
+        @Test
+        void updateCartFromItemsShowcase_cartActionIsPLUS() {
+            // given
+            assertThat(cartRepository.count().block()).isEqualTo(0);
+
+            var queryWithSearchFilter = new ItemsPageableRequest("Телевизор 4K Smart TV", null, null, null);
+
+            var testItems = getItemJoinCartPageViews(queryWithSearchFilter).getContent();
+            assertThat(testItems).hasSize(1);
+            var testItem = testItems.getFirst();
+            // when
+            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.PLUS);
+            // validate item state in showcase after cart update
+            webTestClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(ITEMS_ROOT)
+                            .queryParams(requestFormData)
+                            .build())
+                    .exchange()
+                    // then
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                    .expectBody(String.class)
+                    .value(htmlView -> validateItemInCartSign(htmlView, true));
+            // check if cart updated
+            var cartItems = getCartItems();
+            assertThat(cartItems)
+                    .isNotEmpty()
+                    .hasSize(1);
+            var cartItem = cartItems.getFirst();
+            assertThat(cartItem.getTotalCost()).isEqualTo(testItem.price());
+            assertThat(cartItem.getItemCount()).isEqualTo(1);
+            assertThat(cartItem.getId().itemId()).isEqualTo(testItem.id());
+            assertThat(cartItem.getId().cartId()).isNotNull();
+        }
+
+        @Test
+        void updateCartFromItemsShowcase_cartActionIsMINUS() {
+            // given
+            var queryWithSearchFilter = new ItemsPageableRequest("Телевизор 4K Smart TV", null, null, null);
+
+            var testItems = getItemJoinCartPageViews(queryWithSearchFilter).getContent();
+            assertThat(testItems).hasSize(1);
+            var testItem = testItems.getFirst();
+            // add item to the cart
+            updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.PLUS);
+            // check if item added
+            assertThat(cartRepository.count().block()).isEqualTo(1);
+            assertThat(Objects.requireNonNull(cartItemRepository.findCartItemByItemId(testItem.id()).block())
+                    .getItemCount()).isEqualTo(1);
+            // when
+            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.MINUS);
+            // validate item state in showcase after cart update
+            webTestClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(ITEMS_ROOT)
+                            .queryParams(requestFormData)
+                            .build())
+                    .exchange()
+                    // then
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                    .expectBody(String.class)
+                    .value(htmlView -> validateItemInCartSign(htmlView, false));
+            // check if cart updated
+            assertThat(cartRepository.count().block()).isEqualTo(1);    // cart must not be deleted
+            assertThat(cartItemRepository.findCartItemByItemId(testItem.id()).block()).isNull();
+        }
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void getItemsShowcase_inCaseCertainFiltersAndPagingParamsAndSortedByALPHA_shouldReturnSortedItemsWithGivenLimitations() {
-        // given
-        var searchFilters = ItemsPageableRequest.builder()
-                .search("ом")
-                .sort(ItemSort.ALPHA)
-                .pageSize(10)
-                .build();
-        var expectedItemsViewsMap = itemRepository.findAllWithCartCount(
-                        searchFilters.search(),
-                        searchFilters.sort().name(),
-                        PageRequest.of(searchFilters.pageNumber(), searchFilters.pageSize())
-                )
-                .getContent().stream()
-                .map(itemViewMapper::fromItemJoinCartView)
-                .collect(Collectors.toMap(ItemView::id, itemView -> itemView));
-        // when
-        var response = this.validateAndGetItemsShowcase(searchFilters);
-        // then
-        validateAndGetPageInfo(response, searchFilters.pageSize(), searchFilters.pageNumber(), false, false);
+    @Nested
+    class ItemView {
+        private final long ITEM_ID = ThreadLocalRandom.current().nextLong(1, 12);
 
-        var itemsViewTable = (List<List<ItemView>>) response.getModel().get(ItemListPageView.Fields.items);
-        assertThat(itemsViewTable)
-                .isNotNull()
-                .isNotEmpty()
-                .hasSize(expectedItemsViewsMap.size() / 3);
+        @Test
+        void getItemView_inCaseItemNotInCart_shouldReturnItemInfoWithDefaultInCartCounter() {
+            // given
+            var item = itemRepository.findById(ITEM_ID).block();
+            assertThat(item).isNotNull();
+            // when
+            webTestClient.get()
+                    .uri(ITEMS_ROOT + "/" + item.getId())
+                    .exchange()
+                    // then
+                    .expectStatus().isOk()
+                    .expectBody(String.class)
+                    .value(htmlView -> {
+                        // top elements
+                        assertThat(htmlView).contains(
+                                "<span class=\"badge text-bg-success\">Страница товара</span>",
+                                "<a href=\"/cart/items\" class=\"btn btn-secondary bi bi-cart4\">Корзина</a>",
+                                "<a href=\"/items\" class=\"btn btn-secondary bi bi-arrow-left-square\">Главная</a>"
+                        );
+                        // dynamic elements
+                        assertThat(htmlView).contains(
+                                "<img class=\"p-2\" src=\"" + item.getImgPath() + "\" alt=\"Нет изображения\" width=\"300\" height=\"300\">",
+                                "<h5 class=\"card-title\">" + item.getTitle() + "</h5>",
+                                "<span class=\"badge text-bg-success justify-content-end\">" + item.getPrice() + " руб.</span>",
+                                "<p class=\"card-text\">" + item.getDescription() + "</p>",
+                                // add cart icon (must be disabled if at least 1 item with given id added to the cart)
+                                "<button type=\"submit\" class=\"btn btn-warning ms-auto bi bi-cart4\" name=\"action\" value=\"PLUS\"></button>"
+                        );
+                        validateItemInCartSign(htmlView, false);
+                    });
+        }
 
-        var allResponseItems = itemsViewTable.stream()
-                .flatMap(List::stream)
-                .toList();
-        // validate if all expected items found
-        assertThat(expectedItemsViewsMap.size()).isEqualTo(allResponseItems.size());
-        // validate if all items has expected state
-        assertThat(allResponseItems).allMatch(itemView ->
-                expectedItemsViewsMap.get(itemView.id()).equals(itemView)
-        );
-        // validate if search filter works fine
-        assertThat(allResponseItems).allMatch(itemView -> {
-            var title = itemView.title();
-            var description = itemView.description();
-            return title.contains(searchFilters.search()) || description.contains(searchFilters.search());
-        });
-        // validate sort (ALPHA)
-        assertThat(allResponseItems).isSortedAccordingTo(Comparator.comparing(ItemView::title));
+        @Test
+        void updateCartFromItemView_cartActionIsPLUS() {
+            // given
+            var item = itemRepository.findById(ITEM_ID).block();
+            assertThat(item).isNotNull();
+            // when
+            // add 3 identical items (for check count parameter)
+            updateCartItemFromItemView(item.getId(), CartAction.PLUS);
+            updateCartItemFromItemView(item.getId(), CartAction.PLUS);
+            var redirectUri = updateCartItemFromItemView(item.getId(), CartAction.PLUS);
+            // then
+            webTestClient.get()
+                    .uri(redirectUri)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(String.class)
+                    .value(htmlView -> {
+                        assertThat(htmlView).doesNotContain("<button type=\"submit\" class=\"btn btn-warning ms-auto bi bi-cart4\" name=\"action\" value=\"PLUS\"></button>");
+                        validateItemInCartSign(htmlView, true, 3);
+                    });
+        }
+
+        @Test
+        void updateCartFromItemView_cartActionIsMINUS() {
+            // given
+            var item = itemRepository.findById(ThreadLocalRandom.current().nextLong(1, 12)).block();
+            assertThat(item).isNotNull();
+            // add 2 items to the cart before remove
+            updateCartItemFromItemView(item.getId(), CartAction.PLUS);
+            updateCartItemFromItemView(item.getId(), CartAction.PLUS);
+            // when
+            // delete first
+            var redirectUri = updateCartItemFromItemView(item.getId(), CartAction.MINUS);
+            // then
+            webTestClient.get()
+                    .uri(redirectUri)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(String.class)
+                    .value(htmlView -> {
+                        assertThat(htmlView).doesNotContain("<button type=\"submit\" class=\"btn btn-warning ms-auto bi bi-cart4\" name=\"action\" value=\"PLUS\"></button>");
+                        validateItemInCartSign(htmlView, true);
+                    });
+            // delete last
+            redirectUri = updateCartItemFromItemView(item.getId(), CartAction.MINUS);
+            // then
+            webTestClient.get()
+                    .uri(redirectUri)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectBody(String.class)
+                    .value(htmlView -> {
+                        assertThat(htmlView).contains("<button type=\"submit\" class=\"btn btn-warning ms-auto bi bi-cart4\" name=\"action\" value=\"PLUS\"></button>");
+                        validateItemInCartSign(htmlView, false);
+                    });
+        }
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void getItemsShowcase_inCaseUnpagedAndSortedByPRICEAndUnpaged_thenUpdateCartFromItemsShowcase_shouldReturnAllItemsInRequiredOrderWithUpdateCount() {
-        // given
-        var searchFilters = ItemsPageableRequest.builder()
-                .sort(ItemSort.PRICE)
-                .pageSize(50)
-                .build();
-        var expectedItemsViewsMap = itemRepository.findAllWithCartCount(
-                        searchFilters.search(),
-                        searchFilters.sort().name(),
-                        PageRequest.of(searchFilters.pageNumber(), searchFilters.pageSize())
-                )
-                .getContent().stream()
-                .map(itemViewMapper::fromItemJoinCartView)
-                .collect(Collectors.toMap(ItemView::id, itemView -> itemView));
-        assertThat(expectedItemsViewsMap.size()).isEqualTo(11);
-        // when
-        var response = this.validateAndGetItemsShowcase(searchFilters);
-        // then
-        validateAndGetPageInfo(response, searchFilters.pageSize(), searchFilters.pageNumber(), false, false);
-
-        var itemsViewTable = (List<List<ItemView>>) response.getModel().get(ItemListPageView.Fields.items);
-        assertThat(itemsViewTable)
-                .isNotNull()
-                .isNotEmpty()
-                .hasSize((11 + 1) / 3); // with 1 stub
-
-        var allResponseItems = itemsViewTable.stream()
-                .flatMap(List::stream)
-                .filter(itemView -> itemView.id() > 0)  // remove stub
-                .toList();
-        // validate if all expected items found
-        assertThat(expectedItemsViewsMap.size()).isEqualTo(allResponseItems.size());
-        // validate if all items has expected state
-        assertThat(allResponseItems).allMatch(itemView ->
-                expectedItemsViewsMap.get(itemView.id()).equals(itemView)
-                        && itemView.count() == 0    // there are no item in the cart for now
-        );
-        // validate sort (ALPHA)
-        assertThat(allResponseItems).isSortedAccordingTo(Comparator.comparing(ItemView::price));
-        // ***
-        // add items with id = 1 to the cart (count++)
-        // then check if showcase been updated
-        // when
-        this.validateAndUpdateItemsShowcase(new CartItemAction(CartAction.PLUS, 1L), searchFilters);
-        response = this.validateAndGetItemsShowcase(searchFilters);
-        // then
-        validateAndGetPageInfo(response, searchFilters.pageSize(), searchFilters.pageNumber(), false, false);
-
-        itemsViewTable = (List<List<ItemView>>) response.getModel().get(ItemListPageView.Fields.items);
-        assertThat(itemsViewTable)
-                .isNotNull()
-                .isNotEmpty()
-                .hasSize((11 + 1) / 3); // with 1 stub
-
-        allResponseItems = itemsViewTable.stream()
-                .flatMap(List::stream)
-                .filter(itemView -> itemView.id() > 0)  // remove stub
-                .toList();
-        // validate if all expected items found
-        assertThat(expectedItemsViewsMap.size()).isEqualTo(allResponseItems.size());
-        // validate sort (ALPHA)
-        assertThat(allResponseItems).isSortedAccordingTo(Comparator.comparing(ItemView::price));
-        // find if item with id = 1 count++
-        var updatedItem = allResponseItems.stream()
-                .filter(itemView -> itemView.count() == 1)
-                .toList();
-        assertThat(updatedItem).hasSize(1);
-        var updatedItemFromDb = itemViewMapper.fromItemJoinCartView(
-                itemRepository.findByIdWithCartCount(1L).orElseThrow()
-        );
-        assertThat(updatedItemFromDb).isEqualTo(updatedItem.getFirst());
-    }
-
-    @Test
-    void getItemView_thenUpdateCartFromItemView_thenGetItemViewUpdated_success() {
-        // given
-        var itemJoinCartPageView = itemRepository.findByIdWithCartCount(7L).orElseThrow();
-
-        var expectedItemView = itemViewMapper.fromItemJoinCartView(itemJoinCartPageView);
-        var expectedViewName = "item";
-        // when
-        var response = this.validateAndGetItemView(itemJoinCartPageView.id());
-
-        var actualItemView = (ItemView) response.getModel().get(expectedViewName);
-        assertThat(actualItemView).isNotNull();
-
-        assertThat(actualItemView.id()).isEqualTo(7L);
-        assertThat(actualItemView.title()).isEqualTo("Эргономичный диван");
-        assertThat(actualItemView.description()).isEqualTo("Просторный диван с ортопедическими подушками, механизмом трансформации и чехлом из экокожи");
-        assertThat(actualItemView.imgPath()).isEqualTo("/images/sofa.jpeg");
-        assertThat(actualItemView.price()).isEqualTo(125000);
-        assertThat(actualItemView.count()).isEqualTo(0L);   // prev
-
-        assertThat(actualItemView).isEqualTo(expectedItemView);
-        // ***
-        // add the item to the cart to chek if actualItemView.count() value will be incremented
-        // when
-        this.validateAndUpdateCartFromItemView(itemJoinCartPageView.id());
-        // then
-        expectedItemView = itemViewMapper.fromItemJoinCartView(
-                itemRepository.findByIdWithCartCount(7L).orElseThrow()
-        );
-        response = this.validateAndGetItemView(itemJoinCartPageView.id());
-
-        actualItemView = (ItemView) response.getModel().get(expectedViewName);
-        assertThat(actualItemView).isNotNull();
-
-        assertThat(actualItemView.count()).isEqualTo(1L);   // ++prev
-        assertThat(actualItemView).isEqualTo(expectedItemView);
-    }
-
-    @SneakyThrows
-    private ModelAndView validateAndGetItemView(Long itemId) {
-        // given
-        var expectedViewName = "item";
-        // when
-        var response = mockMvc.perform(get(ITEMS_ROOT + "/" + itemId))
+    private String updateCartItemFromItemView(Long itemId, CartAction action) {
+        var uri = ITEMS_ROOT + "/" + itemId;
+        var requestFormData = new LinkedMultiValueMap<>(Map.of(
+                "id", List.of(itemId.toString()),
+                "action", List.of(action.name())
+        ));
+        webTestClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path(uri)
+                        .queryParams(requestFormData)
+                        .build())
+                .exchange()
                 // then
-                .andExpect(view().name(expectedViewName))
-                .andExpect(model().attributeExists(expectedViewName))
-                .andReturn()
-                .getModelAndView();
-
-        assertThat(response).isNotNull();
-        return response;
+                .expectStatus().is3xxRedirection()
+                .expectHeader().value("Location", Matchers.equalTo(uri));
+        return uri;
     }
 
-    @SneakyThrows
-    private void validateAndUpdateCartFromItemView(Long itemId) {
-        // given
-        var expectedViewName = "redirect:/items/" + itemId;
-        // when
-        mockMvc.perform(post(ITEMS_ROOT + "/" + itemId)
-                        .param("itemId", itemId.toString())
-                        .param("action", CartAction.PLUS.toString())
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+    private LinkedMultiValueMap<String, String> updateCartItemFromShowcase(ItemsPageableRequest itemsPageableRequest,
+                                                                           Long itemId,
+                                                                           CartAction action) {
+        var requestFormData = createPageableRequestQuery(itemsPageableRequest);
+        requestFormData.put("id", List.of(itemId.toString()));
+        requestFormData.put("action", List.of(action.name()));
+
+        webTestClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path(ITEMS_ROOT)
+                        .queryParams(requestFormData)
+                        .build())
+                .exchange()
                 // then
-                .andExpect(status().is3xxRedirection())
-                .andExpect(view().name(expectedViewName));
+                .expectStatus().is3xxRedirection()
+                .expectHeader().value("Location", containsString("/items?"));
+
+        requestFormData.remove("id");
+        requestFormData.remove("action");
+        return requestFormData;
     }
 
-    @SneakyThrows
-    private void validateAndUpdateItemsShowcase(CartItemAction cartItemAction,
-                                                ItemsPageableRequest requestParameters) {
-        // given
-        var expectedViewName = "redirect:/items";
-        // when
-        mockMvc.perform(post(ITEMS_ROOT)
-                        .param(CartItemAction.Fields.action, cartItemAction.action().name())
-                        .param("id", cartItemAction.itemId().toString())
-                        .param(ItemsPageableRequest.Fields.search, requestParameters.search())
-                        .param(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber().toString())
-                        .param(ItemsPageableRequest.Fields.pageSize, requestParameters.pageSize().toString())
-                        .param(ItemsPageableRequest.Fields.sort, requestParameters.sort().name())
+    private Page<ItemJoinCartPageView> getItemJoinCartPageViews(ItemsPageableRequest queryWithSearchFilter) {
+        var inCartItems = itemPageableRepository.findAllWithCartCount(
+                        queryWithSearchFilter.search(),
+                        queryWithSearchFilter.sort().toString(),
+                        PageRequest.of(queryWithSearchFilter.pageNumber(), queryWithSearchFilter.pageSize())
                 )
-                // then
-                .andExpect(view().name(expectedViewName))
-                .andExpect(model().attribute(ItemListPageView.Fields.search, requestParameters.search()))
-                .andExpect(model().attribute(ItemListPageView.Fields.sort, requestParameters.sort().name()));
+                .block();
+        assertThat(inCartItems).isNotNull();
+        return inCartItems;
     }
 
-    @SneakyThrows
-    private ModelAndView validateAndGetItemsShowcase(ItemsPageableRequest requestParameters) {
-        // given
-        var expectedViewName = "items";
-        // when
-        var response = mockMvc.perform(get(ITEMS_ROOT)
-                        .param(ItemsPageableRequest.Fields.search, requestParameters.search())
-                        .param(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber().toString())
-                        .param(ItemsPageableRequest.Fields.pageSize, requestParameters.pageSize().toString())
-                        .param(ItemsPageableRequest.Fields.sort, requestParameters.sort().name())
-                )
-                // then
-                .andExpect(view().name(expectedViewName))
-                .andExpect(model().attributeExists(
-                        ItemListPageView.Fields.items,
-                        ItemListPageView.Fields.paging
-                ))
-                .andExpect(model().attribute(ItemListPageView.Fields.search, requestParameters.search()))
-                .andExpect(model().attribute(ItemListPageView.Fields.sort, requestParameters.sort()))
-                .andReturn()
-                .getModelAndView();
-
-        assertThat(response).isNotNull();
-        return response;
+    private static void validateItemInCartSign(String htmlView, boolean isAdded) {
+        validateItemInCartSign(htmlView, isAdded, 1);
     }
 
-    private static PageInfo validateAndGetPageInfo(ModelAndView response,
-                                                   int expectedPageSize,
-                                                   int expectedPageNumber,
-                                                   boolean expectedHasPrevious,
-                                                   boolean expectedHasNext) {
-        var pageInfo = (PageInfo) response.getModel().get(ItemListPageView.Fields.paging);
-        assertThat(pageInfo).isNotNull();
-        assertThat(pageInfo.pageSize()).isEqualTo(expectedPageSize);
-        assertThat(pageInfo.pageNumber()).isEqualTo(expectedPageNumber);
-        assertThat(pageInfo.hasPrevious()).isEqualTo(expectedHasPrevious);
-        assertThat(pageInfo.hasNext()).isEqualTo(expectedHasNext);
-        return pageInfo;
+    private static void validateItemInCartSign(String htmlView, boolean isAdded, int numberOfAddedItemsWithSameId) {
+        if (isAdded) {
+            assertThat(htmlView).contains("<span>" + numberOfAddedItemsWithSameId + "</span>");   // cart is not empty!
+            assertThat(htmlView).doesNotContain("name=\"action\" value=\"MINUS\" disabled=\"disabled\">");     // item is in the cart
+        } else {
+            assertThat(htmlView).doesNotContain("<span>1</span>");   // cart is empty again
+            assertThat(htmlView).contains("name=\"action\" value=\"MINUS\" disabled=\"disabled\">");     // item is not in the cart again
+        }
+    }
+
+    private static void validateShowcaseDynamicParameters(String html, DynamicParametersToBeChecked toBeChecked) {
+        toBeChecked.expectedItemIds().forEach(
+                id -> assertThat(html).contains("<a href=\"/items/" + id + "\">")
+        );
+        toBeChecked.expectedItemTitles().forEach(
+                title -> assertThat(html).contains("<h5 class=\"card-title\">" + title + "</h5>")
+        );
+        toBeChecked.expectedItemDescriptions().forEach(
+                desc -> assertThat(html).contains("<p class=\"card-text\">" + desc + "</p>")
+        );
+        toBeChecked.expectedItemPrices().forEach(
+                price -> assertThat(html).contains("<span class=\"badge text-bg-success justify-content-end\">" + price + " руб.</span>")
+        );
+        toBeChecked.expectedItemPicLinks().forEach(
+                src -> assertThat(html).contains("<img src=\"" + src + "\" class=\"card-img-top\" alt=\"Нет изображения\">")
+        );
+    }
+
+    private static LinkedMultiValueMap<String, String> createPageableRequestQuery(ItemsPageableRequest from) {
+        return new LinkedMultiValueMap<>(Map.of(
+                ItemsPageableRequest.Fields.search, List.of(from.search()),
+                ItemsPageableRequest.Fields.pageNumber, List.of(from.pageNumber().toString()),
+                ItemsPageableRequest.Fields.pageSize, List.of(from.pageSize().toString()),
+                ItemsPageableRequest.Fields.sort, List.of(from.sort().name())
+        ));
+    }
+
+    private record DynamicParametersToBeChecked(
+            ArrayList<Long> expectedItemIds,
+            ArrayList<String> expectedItemTitles,
+            ArrayList<String> expectedItemDescriptions,
+            ArrayList<Long> expectedItemPrices,
+            ArrayList<String> expectedItemPicLinks) {
+
+        public static DynamicParametersToBeChecked from(Page<ItemJoinCartPageView> expectedItems) {
+            var obj = new DynamicParametersToBeChecked(
+                    new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>()
+            );
+            for (var itemView : expectedItems) {
+                obj.expectedItemIds.add(itemView.id());
+                obj.expectedItemTitles.add(itemView.title());
+                obj.expectedItemDescriptions.add(itemView.description());
+                obj.expectedItemPrices.add(itemView.price());
+                obj.expectedItemPicLinks.add(itemView.imgPath());
+            }
+            return obj;
+        }
     }
 }

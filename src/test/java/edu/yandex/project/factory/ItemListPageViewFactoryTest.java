@@ -5,7 +5,7 @@ import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.PageInfo;
 import edu.yandex.project.controller.dto.enums.ItemSort;
 import edu.yandex.project.mapper.ItemViewMapper;
-import edu.yandex.project.repository.view.ItemJoinCartPageView;
+import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -9,23 +9,20 @@ import edu.yandex.project.exception.handler.GlobalWebExceptionHandler;
 import edu.yandex.project.factory.ItemListPageViewFactory;
 import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.mapper.OrderItemViewMapper;
-import edu.yandex.project.repository.CartItemRepository;
-import edu.yandex.project.repository.CartRepository;
-import edu.yandex.project.repository.ItemRepository;
-import edu.yandex.project.repository.OrderRepository;
+import edu.yandex.project.repository.*;
 import edu.yandex.project.service.impl.CartServiceImpl;
 import edu.yandex.project.service.impl.ItemServiceImpl;
 import edu.yandex.project.service.impl.OrderServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.springframework.test.util.ReflectionTestUtils.getField;
 
 @Import({CartServiceImpl.class, ItemServiceImpl.class, OrderServiceImpl.class})
-@WebMvcTest({CartWebController.class, ItemWebController.class, OrderWebController.class})
+@WebFluxTest({CartWebController.class, ItemWebController.class, OrderWebController.class})
 public abstract class AbstractGlobalWebExceptionHandlerIT {
     protected static final String ERR_DIR_NAME;
     protected static final String ERR_MESSAGE_KEY;
@@ -44,7 +41,7 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     }
 
     @Autowired
-    protected MockMvc mockMvc;
+    protected WebTestClient webTestClient;
 
     @MockitoBean
     protected CartItemRepository mockedCartItemRepository;
@@ -53,7 +50,11 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     @MockitoBean
     protected ItemRepository mockedItemRepository;
     @MockitoBean
+    protected ItemPageableRepository mockedItemPageableRepository;
+    @MockitoBean
     protected OrderRepository mockedOrderRepository;
+    @MockitoBean
+    protected OrderItemRepository mockedOrderItemRepository;
 
     @MockitoBean
     protected ItemListPageViewFactory mockedItemListPageViewFactory;

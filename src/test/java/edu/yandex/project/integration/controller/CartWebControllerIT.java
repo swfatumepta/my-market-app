@@ -1,193 +1,293 @@
 package edu.yandex.project.integration.controller;
 
 import edu.yandex.project.controller.dto.CartItemAction;
-import edu.yandex.project.controller.dto.CartView;
-import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.enums.CartAction;
-import lombok.SneakyThrows;
+import edu.yandex.project.domain.Item;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.ui.ModelMap;
 
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Tag("ItemWebControllerIT")
 public class CartWebControllerIT extends AbstractControllerIT {
 
     @Test
-    void getEmptyCart_thenFillItWithItems_success() {
-        // GET EMPTY CART
-        var cartModelMap = this.validateAndGetCart();
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(0L);
-        assertThat((Collection<?>) cartModelMap.get(CartView.Fields.items)).isEmpty();
-        // THEN ADD 3 DIFFERENT ITEMS TO THE CART (cart must be created automatically)
-        this.updateCartAndValidateResponse(CartAction.PLUS, 1L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 2L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 3L);
-        // THEN ADD 3 IDENTICAL ITEMS TO THE CART
-        this.updateCartAndValidateResponse(CartAction.PLUS, 4L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 4L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 4L);
-        // THEN CHECK IF ITEMS BEEN ADDED TO THE CART
-        cartModelMap = this.validateAndGetCart();
-        var itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(4);
-
-        var totalPrice = new AtomicLong(0L);
-        itemViews.forEach(item -> {
-            assertThat(item).isInstanceOf(ItemView.class);
-            var itemView = (ItemView) item;
-            assertThat(itemView.id()).isBetween(1L, 4L);
-            assertThat(itemView.title()).isNotEmpty();
-            assertThat(itemView.description()).isNotEmpty();
-            assertThat(itemView.imgPath()).isNotEmpty();
-            assertThat(itemView.count()).isGreaterThan(0);
-            if (itemView.id() == 4) {
-                assertThat(itemView.title()).isEqualTo("Беспроводная компьютерная мышь");
-                assertThat(itemView.description()).isEqualTo("Эргономичная беспроводная мышь с Bluetooth 5.0, подсветкой RGB и длительным временем работы от батареи");
-                assertThat(itemView.imgPath()).isEqualTo("/images/mouse.jpeg");
-                assertThat(itemView.price()).isEqualTo(4000);
-                assertThat(itemView.count()).isEqualTo(3);
-                totalPrice.getAndUpdate(current -> current + itemView.price() * itemView.count());
-            } else {
-                assertThat(totalPrice.addAndGet(itemView.price())).isGreaterThan(0);
-            }
-        });
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(totalPrice.get());
-    }
-
-    @Test
-    void removeOneItemFromCart_inCaseItemCountIs1_andTheItemIsNotTheOnlyOneInTheCart_success() {
-        // ADD 2 DIFFERENT ITEMS TO THE CART (cart must be created automatically)
-        this.updateCartAndValidateResponse(CartAction.PLUS, 5L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 6L);
-        // THEN CHECK IF ITEMS BEEN ADDED TO THE CART
-        var cartModelMap = this.validateAndGetCart();
-        var itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(2);
-        // CHECK ITEMS BEFORE REMOVAL
-        var totalPrice = new AtomicLong(0L);
-        itemViews.forEach(item -> {
-            assertThat(item).isInstanceOf(ItemView.class);
-            var itemView = (ItemView) item;
-            assertThat(itemView.id()).isBetween(5L, 6L);
-            assertThat(itemView.title()).isNotEmpty();
-            assertThat(itemView.description()).isNotEmpty();
-            assertThat(itemView.imgPath()).isNotEmpty();
-            assertThat(itemView.count()).isGreaterThan(0);
-            assertThat(totalPrice.addAndGet(itemView.price())).isGreaterThan(0);
-        });
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(totalPrice.get());
-        // THEN REMOVE ITEM WITH ID = 5L
-        this.updateCartAndValidateResponse(CartAction.MINUS, 5L);
-        // CHECK ITEMS AFTER REMOVAL
-        cartModelMap = this.validateAndGetCart();
-        itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(1);
-
-        var itemView = (ItemView) itemViews.stream().findFirst().orElseThrow();
-        assertThat(itemView.title()).isEqualTo("Плюшевый заяц");
-        assertThat(itemView.description()).isEqualTo("Мягкая плюшевая игрушка ручной работы, высотой 40 см, изготовлена из гипоаллергенного материала");
-        assertThat(itemView.imgPath()).isEqualTo("/images/rabbit.jpeg");
-        assertThat(itemView.price()).isEqualTo(1800);
-        assertThat(itemView.count()).isEqualTo(1);
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(itemView.price());
-    }
-
-    @Test
-    void removeOneItemFromCart_inCaseItemCountIs2_andCartDoNotContainAnotherItems_success() {
-        // ADD 2 IDENTICAL ITEMS TO THE CART (cart must be created automatically)
-        this.updateCartAndValidateResponse(CartAction.PLUS, 6L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 6L);
-        // THEN CHECK IF ITEMS BEEN ADDED TO THE CART
-        var cartModelMap = this.validateAndGetCart();
-        var itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(1);
-        // CHECK ITEMS BEFORE REMOVAL
-        var totalPrice = new AtomicLong(0L);
-        itemViews.forEach(item -> {
-                    assertThat(item).isInstanceOf(ItemView.class);
-                    var itemView = (ItemView) item;
-                    assertThat(itemView.id()).isEqualTo(6L);
-                    assertThat(itemView.price()).isEqualTo(1800);
-                    assertThat(itemView.count()).isEqualTo(2);
-                    totalPrice.getAndUpdate(current -> current + itemView.price() * itemView.count());
-                }
-        );
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(totalPrice.get());
-        // THEN REMOVE ONE ITEM
-        this.updateCartAndValidateResponse(CartAction.MINUS, 6L);
-        // CHECK ITEMS AFTER REMOVAL
-        cartModelMap = this.validateAndGetCart();
-        itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(1);
-
-        var itemView = (ItemView) itemViews.stream().findFirst().orElseThrow();
-        assertThat(itemView.id()).isEqualTo(6L);
-        assertThat(itemView.price()).isEqualTo(1800);
-        assertThat(itemView.count()).isEqualTo(1);
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(itemView.price());
-    }
-
-    @Test
-    void deleteItemsFromCart_inCaseItemCountIs2_success() {
-        // ADD 2 IDENTICAL ITEMS TO THE CART (cart must be created automatically)
-        this.updateCartAndValidateResponse(CartAction.PLUS, 10L);
-        this.updateCartAndValidateResponse(CartAction.PLUS, 10L);
-        // THEN CHECK IF ITEMS BEEN ADDED TO THE CART
-        var cartModelMap = this.validateAndGetCart();
-        var itemViews = (Collection<?>) cartModelMap.get(CartView.Fields.items);
-        assertThat(itemViews).hasSize(1);
-        // CHECK ITEMS BEFORE REMOVAL
-        var totalPrice = new AtomicLong(0L);
-        itemViews.forEach(item -> {
-                    assertThat(item).isInstanceOf(ItemView.class);
-                    var itemView = (ItemView) item;
-                    assertThat(itemView.id()).isEqualTo(10L);
-                    assertThat(itemView.price()).isEqualTo(4200);
-                    assertThat(itemView.count()).isEqualTo(2);
-                    totalPrice.getAndUpdate(current -> current + itemView.price() * itemView.count());
-                }
-        );
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(totalPrice.get());
-        // THEN DELETE ALL ITEMS WITH ONE ACTION
-        this.updateCartAndValidateResponse(CartAction.DELETE, 10L);
-        // CHECK ITEMS AFTER REMOVAL
-        cartModelMap = this.validateAndGetCart();
-        assertThat(cartModelMap.get(CartView.Fields.total)).isEqualTo(0L);
-        assertThat((Collection<?>) cartModelMap.get(CartView.Fields.items)).isEmpty();
-    }
-
-    @SneakyThrows
-    private ModelMap validateAndGetCart() {
+    void getCartItems_inCaseCartIsEmpty() {
+        // given
+        assertThat(cartRepository.count().block()).isEqualTo(0);
         // when
-        var response = mockMvc.perform(get(CART_ROOT))
+        webTestClient.get()
+                .uri(CART_ROOT)
                 // then
-                .andExpect(view().name("cart"))
-                .andExpect(model().attributeExists(CartView.Fields.items, CartView.Fields.total))
-                .andReturn()
-                .getModelAndView();
-
-        assertThat(response).isNotNull();
-        return response.getModelMap();
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(CartWebControllerIT::validateEmptyCart);
     }
 
-    @SneakyThrows
-    private void updateCartAndValidateResponse(CartAction cartAction, Long itemId) {
+    @Test
+    void getCartItems_inCaseCartContainsTwoIdenticalItems() {
+        // given
+        var item = itemRepository.findById(2L).block();
+        assertThat(item).isNotNull();
+
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
         // when
-        mockMvc.perform(post(CART_ROOT)
-                        .param(CartItemAction.Fields.action, cartAction.toString())
-                        .param("id", itemId.toString())
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        webTestClient.get()
+                .uri(CART_ROOT)
                 // then
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cart/items"));
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(htmlView -> {
+                    // top elements
+                    assertThat(htmlView).doesNotContain("<h4 class=\"text-muted\">Корзина пуста</h4>");
+                    // dynamic elements
+                    checkIfItemIsPresent(htmlView, item, 2);
+                    // check if place-an-order form is present
+                    assertThat(htmlView).contains(
+                            "<form action=\"/orders/place-an-order\" method=\"post\">",
+                            "<h2>Итого: " + item.getPrice() * 2 + " руб.</h2>"
+                    );
+                });
+        var cartItems = getCartItems();
+        assertThat(cartItems)
+                .isNotEmpty()
+                .hasSize(1);
+        var cartItem = cartItems.getFirst();
+        assertThat(cartItem.getItemCount()).isEqualTo(2);
+        assertThat(cartItem.getTotalCost()).isEqualTo(item.getPrice() * 2);
+        assertThat(cartItem.getId().itemId()).isEqualTo(item.getId());
+        assertThat(cartItem.getId().cartId()).isNotNull();
+    }
+
+    @Test
+    void getCartItems_inCaseCartContainsThreeDifferentItems() {
+        // given
+        var itemIds = Set.of(1L, 2L, 3L);
+        var items = itemRepository.findAllById(itemIds)
+                .collectList()
+                .block();
+        assertThat(items)
+                .isNotEmpty()
+                .hasSize(3);
+        // single item.id = 1
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getFirst().getId()));
+        // two item.id = 2
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
+        // three item.id = 3
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        // when
+        webTestClient.get()
+                .uri(CART_ROOT)
+                // then
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(htmlView -> {
+                    // top elements
+                    assertThat(htmlView).doesNotContain("<h4 class=\"text-muted\">Корзина пуста</h4>");
+                    // dynamic elements
+                    var totalPrice = items.stream()
+                            .map(item -> {
+                                checkIfItemIsPresent(htmlView, item, item.getId().intValue());
+                                return item.getPrice() * item.getId();
+                            })
+                            .reduce(0L, Long::sum);
+                    // check if place-an-order form is present
+                    assertThat(htmlView).contains(
+                            "<form action=\"/orders/place-an-order\" method=\"post\">",
+                            "<h2>Итого: " + totalPrice + " руб.</h2>"
+                    );
+                });
+        var cartItems = getCartItems();
+        assertThat(cartItems)
+                .isNotEmpty()
+                .hasSize(3);
+        cartItems.forEach(cartItem -> {
+            var cartItemItemId = cartItem.getId().itemId();
+            assertThat(itemIds).contains(cartItemItemId);
+
+            var sourceItem = items.stream()
+                    .filter(item -> item.getId().equals(cartItemItemId))
+                    .findFirst().orElseThrow();
+
+            assertThat(cartItem.getItemCount()).isEqualTo(cartItemItemId);
+            assertThat(cartItem.getTotalCost()).isEqualTo(sourceItem.getPrice() * sourceItem.getId());
+        });
+    }
+
+    @Test
+    void updateCartFromCartView_inCaseCartContainsTwoIdenticalItems_cartActionDELETE() {
+        // given
+        var item = itemRepository.findById(2L).block();
+        assertThat(item).isNotNull();
+
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        // when
+        updateCartFromCartView(new CartItemAction(CartAction.DELETE, item.getId()));
+        // then
+        webTestClient.get()
+                .uri(CART_ROOT)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(CartWebControllerIT::validateEmptyCart);
+
+        var cartItems = getCartItems();
+        assertThat(cartItems).isEmpty();
+        assertThat(cartRepository.count().block()).isEqualTo(1);    // cart must not be deleted
+    }
+
+    @Test
+    void updateCartFromCartView_inCaseCartContainsTwoDifferentItems_cartActionDELETE() {
+        // given
+        var item1 = itemRepository.findById(1L).block();
+        assertThat(item1).isNotNull();
+        var item2 = itemRepository.findById(2L).block();
+        assertThat(item2).isNotNull();
+
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
+        // when
+        updateCartFromCartView(new CartItemAction(CartAction.DELETE, item1.getId()));
+        // then
+        webTestClient.get()
+                .uri(CART_ROOT)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(htmlView -> {
+                    // top elements
+                    assertThat(htmlView).doesNotContain("<h4 class=\"text-muted\">Корзина пуста</h4>");
+                    // dynamic elements
+                    checkIfItemIsPresent(htmlView, item2, 1);
+                    // check if place-an-order form is present
+                    assertThat(htmlView).contains(
+                            "<form action=\"/orders/place-an-order\" method=\"post\">",
+                            "<h2>Итого: " + item2.getPrice() + " руб.</h2>"
+                    );
+                });
+        var cartItems = getCartItems();
+        assertThat(cartItems)
+                .isNotEmpty()
+                .hasSize(1);
+        var cartItem = cartItems.getFirst();
+        assertThat(cartItem.getItemCount()).isEqualTo(1);
+        assertThat(cartItem.getTotalCost()).isEqualTo(item2.getPrice());
+        assertThat(cartItem.getId().itemId()).isEqualTo(item2.getId());
+        assertThat(cartItem.getId().cartId()).isNotNull();
+    }
+
+    @Test
+    void updateCartFromCartView_inCaseCartContainsTwoDifferentItems_cartActionMINUS() {
+        // given
+        var item1 = itemRepository.findById(1L).block();
+        assertThat(item1).isNotNull();
+        var item2 = itemRepository.findById(2L).block();
+        assertThat(item2).isNotNull();
+
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
+        // when
+        updateCartFromCartView(new CartItemAction(CartAction.MINUS, item1.getId()));
+        // then
+        webTestClient.get()
+                .uri(CART_ROOT)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(htmlView -> {
+                    // top elements
+                    assertThat(htmlView).doesNotContain("<h4 class=\"text-muted\">Корзина пуста</h4>");
+                    // dynamic elements
+                    checkIfItemIsPresent(htmlView, item2, 1);
+                    // check if place-an-order form is present
+                    assertThat(htmlView).contains(
+                            "<form action=\"/orders/place-an-order\" method=\"post\">",
+                            "<h2>Итого: " + item2.getPrice() + " руб.</h2>"
+                    );
+                });
+        var cartItems = getCartItems();
+        assertThat(cartItems)
+                .isNotEmpty()
+                .hasSize(1);
+        var cartItem = cartItems.getFirst();
+        assertThat(cartItem.getItemCount()).isEqualTo(1);
+        assertThat(cartItem.getTotalCost()).isEqualTo(item2.getPrice());
+        assertThat(cartItem.getId().itemId()).isEqualTo(item2.getId());
+        assertThat(cartItem.getId().cartId()).isNotNull();
+    }
+
+    @Test
+    void updateCartFromCartView_inCaseCartContainsTwoIdenticalItems_cartActionMINUS() {
+        // given
+        var item = itemRepository.findById(2L).block();
+        assertThat(item).isNotNull();
+
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        // when
+        updateCartFromCartView(new CartItemAction(CartAction.MINUS, item.getId()));
+        // then
+        webTestClient.get()
+                .uri(CART_ROOT)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class).value(htmlView -> {
+                    // top elements
+                    assertThat(htmlView).doesNotContain("<h4 class=\"text-muted\">Корзина пуста</h4>");
+                    // dynamic elements
+                    checkIfItemIsPresent(htmlView, item, 1);
+                    // check if place-an-order form is present
+                    assertThat(htmlView).contains(
+                            "<form action=\"/orders/place-an-order\" method=\"post\">",
+                            "<h2>Итого: " + item.getPrice() + " руб.</h2>"
+                    );
+                });
+        var cartItems = getCartItems();
+        assertThat(cartItems)
+                .isNotEmpty()
+                .hasSize(1);
+        var cartItem = cartItems.getFirst();
+        assertThat(cartItem.getItemCount()).isEqualTo(1);
+        assertThat(cartItem.getTotalCost()).isEqualTo(item.getPrice());
+        assertThat(cartItem.getId().itemId()).isEqualTo(item.getId());
+        assertThat(cartItem.getId().cartId()).isNotNull();
+    }
+
+    private static void checkIfItemIsPresent(String htmlView, Item item, int itemCount) {
+        assertThat(htmlView).contains(
+                "<img class=\"p-2\" src=\"" + item.getImgPath() + "\" alt=\"Нет изображения\" width=\"300\" height=\"300\">",
+                "<h5 class=\"card-title\">" + item.getTitle() + "</h5>",
+                "<span class=\"badge text-bg-success justify-content-end\">" + item.getPrice() + " руб.</span>",
+                "<p class=\"card-text\">" + item.getDescription() + "</p>",
+                "<input type=\"hidden\" name=\"id\" value=\"" + item.getId() + "\">",
+                "name=\"action\" value=\"MINUS\">", // CartAction.MINUS must be available for items, that has count > 0
+                "<span>" + itemCount + "</span>",
+                "<button type=\"submit\" class=\"btn btn-outline-secondary\" name=\"action\" value=\"PLUS\">",
+                "value=\"DELETE\"></button>"    // CartAction.DELETE
+        );
+    }
+
+    private static void validateEmptyCart(String htmlView) {
+        // top elements
+        assertThat(htmlView).contains(
+                "<span class=\"badge text-bg-success\">Корзина</span>",
+                "<a href=\"/orders\" class=\"btn btn-secondary ms-auto bi bi-file-earmark-text\">Заказы</a>",
+                "<a href=\"/items\" class=\"btn btn-secondary bi bi-arrow-left-square\">Главная</a>"
+        );
+        assertThat(htmlView).contains("<h4 class=\"text-muted\">Корзина пуста</h4>");
+        // check if there is no possibility to make an order
+        assertThat(htmlView).doesNotContain("<form action=\"/orders/place-an-order\" method=\"post\">");
     }
 }
