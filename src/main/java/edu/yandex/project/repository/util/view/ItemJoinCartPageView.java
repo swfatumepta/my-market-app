@@ -1,4 +1,4 @@
-package edu.yandex.project.repository.view;
+package edu.yandex.project.repository.util.view;
 
 import lombok.Builder;
 import lombok.experimental.FieldNameConstants;
