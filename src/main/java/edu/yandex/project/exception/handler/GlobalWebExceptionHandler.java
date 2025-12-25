@@ -3,14 +3,18 @@ package edu.yandex.project.exception.handler;
 import edu.yandex.project.exception.AbstractProjectException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.ui.Model;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterValidationResult;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.reactive.result.view.Rendering;
+import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.text.MessageFormat.format;
@@ -20,65 +24,75 @@ import static java.text.MessageFormat.format;
 public class GlobalWebExceptionHandler {
     private final static String ERR_DIR_NAME = "/error/";
     private final static String ERR_MESSAGE_KEY = "errorMessage";
-    private final static String ARGUMENT_ERR_TEMPLATE = "{0}: value rejected = {1}";
+    private final static String VALUE_REJECTED_TEMPLATE = "{0}: value rejected = {1}";
 
     @ExceptionHandler(AbstractProjectException.class)
-    protected String handleItemNotFoundException(AbstractProjectException exc, Model model) {
-        log.error("GlobalWebExceptionHandler::handleItemNotFoundException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
-        log.debug("GlobalWebExceptionHandler::handleItemNotFoundException {} out", exc.toString());
-        return ERR_DIR_NAME + exc.getHttpStatus().value();
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    protected String handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException exc, Model model) {
-        log.error("GlobalWebExceptionHandler::handleHttpRequestMethodNotSupportedException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
-        log.debug("GlobalWebExceptionHandler::handleHttpRequestMethodNotSupportedException {} out", exc.toString());
-        return ERR_DIR_NAME + HttpStatus.METHOD_NOT_ALLOWED.value();
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    protected String handleMethodArgumentNotValidException(MethodArgumentNotValidException exc, Model model) {
-        log.warn("GlobalWebExceptionHandler::handleMethodArgumentNotValidException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, buildErrorMessage(exc));
-        log.debug("GlobalWebExceptionHandler::handleMethodArgumentNotValidException {} out", exc.toString());
-        return ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    protected String handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exc, Model model) {
-        log.warn("GlobalWebExceptionHandler::handleMethodArgumentTypeMismatchException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, buildErrorMessage(exc));
-        log.debug("GlobalWebExceptionHandler::handleMethodArgumentTypeMismatchException {} out", exc.toString());
-        return ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+    public Mono<Rendering> handleAbstractProjectException(AbstractProjectException exc) {
+        log.error("GlobalWebExceptionHandler::handleAbstractProjectException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + exc.getHttpStatus().value())
+                .modelAttribute(ERR_MESSAGE_KEY, exc.getMessage())
+                .status(exc.getHttpStatus())
+                .build());
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
-    protected String handleHandlerMethodValidationException(HandlerMethodValidationException exc, Model model) {
-        log.error("GlobalWebExceptionHandler::handleHandlerMethodValidationException {} in", exc.getDetailMessageArguments());
-        model.addAttribute(ERR_MESSAGE_KEY, exc.getDetailMessageArguments());
-        log.debug("GlobalWebExceptionHandler::handleHandlerMethodValidationException {} out", exc.getDetailMessageArguments());
-        return ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+    public Mono<Rendering> handleHandlerMethodValidationException(HandlerMethodValidationException exc) {
+        log.error("GlobalWebExceptionHandler::handleHandlerMethodValidationException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + exc.getStatusCode().value())
+                .modelAttribute(ERR_MESSAGE_KEY, buildErrorMessage(exc))
+                .status(exc.getStatusCode())
+                .build());
+    }
+
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<Rendering> handleWebExchangeBindException(WebExchangeBindException exc) {
+        log.error("GlobalWebExceptionHandler::handleWebExchangeBindException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + exc.getStatusCode().value())
+                .modelAttribute(ERR_MESSAGE_KEY, buildErrorMessage(exc))
+                .status(exc.getStatusCode())
+                .build());
+    }
+
+    @ExceptionHandler(ErrorResponseException.class)
+    public Mono<Rendering> handleErrorResponseException(ErrorResponseException exc) {
+        log.error("GlobalWebExceptionHandler::handleErrorResponseException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + exc.getStatusCode().value())
+                .modelAttribute(ERR_MESSAGE_KEY, exc.getMessage())
+                .status(exc.getStatusCode())
+                .build());
     }
 
     @ExceptionHandler(RuntimeException.class)
-    protected String handleRuntimeException(RuntimeException exc, Model model) {
-        log.error("GlobalWebExceptionHandler::handleRuntimeException {} in", exc.toString());
-        model.addAttribute(ERR_MESSAGE_KEY, exc.getMessage());
-        log.debug("GlobalWebExceptionHandler::handleRuntimeException {} out", exc.toString());
-        return ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value();
+    public Mono<Rendering> handleRuntimeException(RuntimeException exc) {
+        log.error("GlobalWebExceptionHandler::handleRuntimeException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .modelAttribute(ERR_MESSAGE_KEY, exc.getMessage())
+                .build());
     }
 
-    private static String[] buildErrorMessage(MethodArgumentTypeMismatchException exc) {
-        return new String[]{format(ARGUMENT_ERR_TEMPLATE, exc.getName(), exc.getValue())};
+    private static String buildErrorMessage(HandlerMethodValidationException exc) {
+        return exc.getParameterValidationResults().stream()
+                .map(ParameterValidationResult::getResolvableErrors)
+                .flatMap(List::stream)
+                .map(messageSourceResolvable -> {
+                    if (messageSourceResolvable instanceof FieldError fieldError) {
+                        var field = fieldError.getField();
+                        var error = Objects.requireNonNullElse(fieldError.getDefaultMessage(), "");
+                        return field + ": " + error;
+                    }
+                    return "";
+                })
+                .collect(Collectors.joining(", "));
     }
 
-    private static String[] buildErrorMessage(MethodArgumentNotValidException exc) {
-        return new String[]{
-                exc.getFieldErrors().stream()
-                        .map(fieldError -> format(ARGUMENT_ERR_TEMPLATE, fieldError.getField(), fieldError.getRejectedValue()))
-                        .collect(Collectors.joining(", "))
-        };
+    private static String buildErrorMessage(WebExchangeBindException exc) {
+        return exc.getFieldErrors().stream()
+                .map(fieldError -> format(VALUE_REJECTED_TEMPLATE, fieldError.getField(), fieldError.getRejectedValue()))
+                .collect(Collectors.joining(", "));
     }
 }
