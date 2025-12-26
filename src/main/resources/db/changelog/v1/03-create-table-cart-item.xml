@@ -12,6 +12,7 @@
                              foreignKeyName="fk_cart_item_cart"
                              referencedTableName="carts"
                              referencedColumnNames="id"
+                             deleteCascade="true"/>
                 />
             </column>
             <column name="item_id" type="BIGINT">

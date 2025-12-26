@@ -3,25 +3,26 @@ package edu.yandex.project.integration.exception.handler;
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.enums.CartAction;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.servlet.ModelAndView;
+import reactor.core.publisher.Mono;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @Tag("ItemWebControllerExceptionHandlerIT")
 public class ItemWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExceptionHandlerIT {
@@ -29,73 +30,84 @@ public class ItemWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
 
     @MethodSource("invalidItemsPageableRequestProvider")
     @ParameterizedTest(name = "ItemWebController::getItemsShowcase -> {0}")
-    void getItemsShowcase_handleValidationExceptions(String ignored, TestCaseData given) throws Exception {
+    void getItemsShowcase_handleValidationExceptions(String ignored, TestCaseData given) {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+        var viewIdentifyingText = "400 - BAD_REQUEST";
         // when
-        var response = mockMvc.perform(get(ITEMS_ROOT)
-                        .params(new LinkedMultiValueMap<>(given.requestParams())))
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(ITEMS_ROOT)
+                        .queryParams(new LinkedMultiValueMap<>(given.requestParams()))
+                        .build())
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attributeExists(ERR_MESSAGE_KEY))
-                .andReturn()
-                .getModelAndView();
-
-        validateResponse(given, response);
+                .expectStatus().isBadRequest()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(validate(given, viewIdentifyingText));
     }
 
     @MethodSource({"invalidItemsPageableRequestProvider", "invalidCartItemActionProvider"})
     @ParameterizedTest(name = "ItemWebController::updateCartFromItemsShowcase -> {0}")
-    void updateCartFromItemsShowcase_handleValidationExceptions(String ignored, TestCaseData given) throws Exception {
+    void updateCartFromItemsShowcase_handleValidationExceptions(String ignored, TestCaseData given) {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+        var viewIdentifyingText = "400 - BAD_REQUEST";
         // when
-        var response = mockMvc.perform(post(ITEMS_ROOT)
-                        .params(new LinkedMultiValueMap<>(given.requestParams())))
+        webTestClient.post()
+                .uri(ITEMS_ROOT)
+                .bodyValue(new LinkedMultiValueMap<>(given.requestParams()))
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attributeExists(ERR_MESSAGE_KEY))
-                .andReturn()
-                .getModelAndView();
-
-        validateResponse(given, response);
+                .expectStatus().isBadRequest()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(validate(given, viewIdentifyingText));
     }
 
     @MethodSource("invalidCartItemActionProvider")
     @ParameterizedTest(name = "ItemWebController::updateCartFromItemView -> {0}")
-    void updateCartFromItemView_handleValidationExceptions(String ignored, TestCaseData given) throws Exception {
+    void updateCartFromItemView_handleValidationExceptions(String ignored, TestCaseData given) {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.BAD_REQUEST.value();
+        var viewIdentifyingText = "400 - BAD_REQUEST";
         // when
-        var response = mockMvc.perform(post(ITEMS_ROOT + "/1")
-                        .params(new LinkedMultiValueMap<>(given.requestParams())))
+        webTestClient.post()
+                .uri(ITEMS_ROOT + "/1")
+                .bodyValue(new LinkedMultiValueMap<>(given.requestParams()))
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attributeExists(ERR_MESSAGE_KEY))
-                .andReturn()
-                .getModelAndView();
-
-        validateResponse(given, response);
+                .expectStatus().isBadRequest()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(validate(given, viewIdentifyingText));
     }
 
     @Test
-    void getItemView_handleItemNotFoundException_inCaseNonExistentItemId() throws Exception {
+    void getItemView_handleItemNotFoundException_inCaseNonExistentItemId() {
         // given
-        var expectedView = ERR_DIR_NAME + HttpStatus.NOT_FOUND.value();
-        var expectedErrorMessage = MessageFormat.format(ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
+        var viewIdentifyingText = "404 - NOT_FOUND";
+        var expectedMessages = MessageFormat.format(ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
         // when
-        when(mockedItemRepository.findByIdWithCartCount(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(mockedItemRepository.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());
+        when(mockedCartItemRepository.findCartItemByItemId(NON_EXISTENT_ID)).thenReturn(Mono.empty());
 
-        mockMvc.perform(get(ITEMS_ROOT + "/" + NON_EXISTENT_ID))
+        webTestClient.get()
+                .uri(ITEMS_ROOT + "/" + NON_EXISTENT_ID)
+                .exchange()
                 // then
-                .andExpect(view().name(expectedView))
-                .andExpect(model().attribute(ERR_MESSAGE_KEY, expectedErrorMessage));
+                .expectStatus().isNotFound()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(html -> {
+                    assertThat(html).contains(viewIdentifyingText);
+                    assertThat(html).contains(expectedMessages);
+                });
     }
 
-    private static void validateResponse(TestCaseData given, ModelAndView response) {
-        assertThat(response).isNotNull();
-        var errMessage = ((Object[]) response.getModel().get(ERR_MESSAGE_KEY))[0];
-        assertThat((String) errMessage).contains(given.expectedMessages());
+    private static @NotNull Consumer<String> validate(TestCaseData given, String viewIdentifyingText) {
+        return html -> {
+            assertThat(html).contains(viewIdentifyingText);
+            assertThat(html).contains(given.expectedMessages());
+        };
     }
 
     private static Stream<Arguments> invalidCartItemActionProvider() {

@@ -1,19 +1,21 @@
 package edu.yandex.project.controller;
 
+import edu.yandex.project.controller.dto.CartActionRequest;
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
-import edu.yandex.project.controller.dto.enums.CartAction;
+import edu.yandex.project.controller.util.Views;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.ItemService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.reactive.result.view.Rendering;
+import reactor.core.publisher.Mono;
 
 @Controller
 @RequestMapping("/items")
@@ -26,51 +28,65 @@ public class ItemWebController {
 
     // showcase
     @GetMapping
-    public String getItemsShowcase(@Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters, Model model) {
+    public Mono<Rendering> getItemsShowcase(@Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters) {
         log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
-        var itemListPageView = itemService.findAll(requestParameters);
-
-        model.addAttribute(ItemListPageView.Fields.items, itemListPageView.items());
-        model.addAttribute(ItemListPageView.Fields.paging, itemListPageView.paging());
-        model.addAttribute(ItemListPageView.Fields.search, itemListPageView.search());
-        model.addAttribute(ItemListPageView.Fields.sort, itemListPageView.sort());
-        log.info("ItemWebController::getItemsShowcase {} ends. Result: {}", requestParameters, itemListPageView);
-        return "items";
+        return itemService.findAll(requestParameters)
+                .map(itemListPageView -> Rendering
+                        .view(Views.ITEMS.getName())
+                        .modelAttribute(ItemListPageView.Fields.items, itemListPageView.items())
+                        .modelAttribute(ItemListPageView.Fields.paging, itemListPageView.paging())
+                        .modelAttribute(ItemListPageView.Fields.search, itemListPageView.search())
+                        .modelAttribute(ItemListPageView.Fields.sort, itemListPageView.sort())
+                        .status(HttpStatus.OK)
+                        .build())
+                .doOnSuccess(rendering ->
+                        log.info("ItemWebController::getItemsShowcase {} ends. Result: {}", requestParameters, rendering)
+                );
     }
 
     @PostMapping
-    public String updateCartFromItemsShowcase(@Valid @NotNull @ModelAttribute CartItemAction cartItemAction,
-                                              @Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters,
-                                              RedirectAttributes redirectAttributes) {
+    public Mono<Rendering> updateCartFromItemsShowcase(@Valid @NotNull @ModelAttribute CartItemAction cartItemAction,
+                                                       @Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters) {
         log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
-        cartService.updateCart(cartItemAction);
-
-        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber());
-        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.pageSize, requestParameters.pageSize());
-        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.search, requestParameters.search());
-        redirectAttributes.addAttribute(ItemsPageableRequest.Fields.sort, requestParameters.sort());
-        log.info("ItemWebController::updateCartFromItemsShowcase {} ends. Redirecting -> /items ...", cartItemAction);
-        return "redirect:/items";
+        return cartService.updateCart(cartItemAction)
+                .thenReturn(Rendering
+                        .redirectTo("/items?pageNumber={pageNumber}&pageSize={pageSize}&search={search}&sort={sort}")
+                        .modelAttribute(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber())
+                        .modelAttribute(ItemsPageableRequest.Fields.pageSize, requestParameters.pageSize())
+                        .modelAttribute(ItemsPageableRequest.Fields.search, requestParameters.search())
+                        .modelAttribute(ItemsPageableRequest.Fields.sort, requestParameters.sort())
+                        .build())
+                .doOnSuccess(rendering ->
+                        log.info("ItemWebController::updateCartFromItemsShowcase {} ends. Redirecting -> /items",
+                                cartItemAction)
+                );
     }
 
     // item view
     @GetMapping("/{itemId}")
-    public String getItemView(@PathVariable Long itemId, Model model) {
+    public Mono<Rendering> getItemView(@PathVariable Long itemId) {
         log.info("ItemWebController::getItemView {} begins", itemId);
-        var itemView = itemService.findOne(itemId);
-
-        model.addAttribute("item", itemView);
-        log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, itemView);
-        return "item";
+        return itemService.findOne(itemId)
+                .map(itemView -> Rendering
+                        .view(Views.ITEM.getName())
+                        .modelAttribute("item", itemView)
+                        .status(HttpStatus.OK)
+                        .build())
+                .doOnSuccess(rendering ->
+                        log.info("ItemWebController::getItemView {} ends. Result: {}", itemId, rendering)
+                );
     }
 
     @PostMapping("/{itemId}")
-    public String updateCartFromItemView(@PathVariable Long itemId,
-                                         @Valid @NotNull @RequestParam("action") CartAction cartAction) {
-        log.info("ItemWebController::updateCartFromItemView {}, {} begins", itemId, cartAction);
-        cartService.updateCart(new CartItemAction(cartAction, itemId));
-        log.info("ItemWebController::updateCartFromItemView {}, {} ends. Redirecting -> /item/{} ...",
-                itemId, cartAction, itemId);
-        return "redirect:/items/" + itemId;
+    public Mono<Rendering> updateCartFromItemView(@PathVariable Long itemId,
+                                                  // Webflux не умеет напрямую распознвать enum в параметре запроса
+                                                  @Valid @NotNull @ModelAttribute CartActionRequest cartActionRequest) {
+        log.info("ItemWebController::updateCartFromItemView {}, {} begins", itemId, cartActionRequest);
+        return cartService.updateCart(new CartItemAction(cartActionRequest.action(), itemId))
+                .thenReturn(Rendering.redirectTo("/items/" + itemId).build())
+                .doOnSuccess(rendering ->
+                        log.info("ItemWebController::updateCartFromItemView {}, {} ends. Redirecting -> /items/{}",
+                                itemId, cartActionRequest, itemId)
+                );
     }
 }

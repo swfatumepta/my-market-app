@@ -26,7 +26,7 @@
         <div class="col">
             <div class="alert alert-warning d-flex align-items-center" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <div th:text="${errorMessage ?: 'NOT_FOUND'}"></div>
+                <div th:utext="${errorMessage ?: 'NOT_FOUND'}"></div>
             </div>
         </div>
     </div>

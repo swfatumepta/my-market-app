@@ -1,12 +1,14 @@
 package edu.yandex.project.controller;
 
+import edu.yandex.project.controller.util.Views;
 import edu.yandex.project.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.reactive.result.view.Rendering;
+import reactor.core.publisher.Mono;
 
 @Controller
 @RequestMapping("/orders")
@@ -16,35 +18,42 @@ public class OrderWebController {
 
     private final OrderService orderService;
 
-    @GetMapping()
-    public String getOrders(Model model) {
+    @GetMapping
+    public Mono<Rendering> getOrders() {
         log.info("OrderWebController::getOrders begins");
-        var orderViews = orderService.findAll();
-
-        model.addAttribute("orders", orderViews);
-        log.info("OrderWebController::getOrders ends. Result: {}", orderViews);
-        return "orders";
+        return orderService.findAll()
+                .map(orderViews -> Rendering
+                        .view(Views.ORDERS.getName())
+                        .modelAttribute("orders", orderViews)
+                        .status(HttpStatus.OK)
+                        .build())
+                .doOnSuccess(rendering -> log.info("OrderWebController::getOrders ends. Result: {}", rendering));
     }
 
     @GetMapping("/{id}")
-    public String getOrder(@PathVariable Long id, @RequestParam(defaultValue = "false") Boolean newOrder, Model model) {
-        log.info("OrderWebController::getOrder begins");
-        var orderView = orderService.findOne(id);
-
-        model.addAttribute("order", orderView);
-        model.addAttribute("newOrder", newOrder);
-        log.info("OrderWebController::getOrder ends. Result: {}", orderView);
-        return "order";
+    public Mono<Rendering> getOrder(@PathVariable Long id, @RequestParam(required = false) boolean newOrder) {
+        log.info("OrderWebController::getOrder {}, isNew = {} begins", id, newOrder);
+        return orderService.findOne(id)
+                .map(orderView -> Rendering
+                        .view(Views.ORDER.getName())
+                        .modelAttribute("order", orderView)
+                        .modelAttribute("newOrder", newOrder)
+                        .build())
+                .doOnSuccess(rendering ->
+                        log.info("OrderWebController::getOrder {}, isNew = {} ends. Result: {}", id, newOrder, rendering)
+                );
     }
 
     @PostMapping("/place-an-order")
-    public String placeAnOrder(RedirectAttributes redirectAttributes) {
+    public Mono<Rendering> placeAnOrder() {
         log.info("OrderWebController::placeAnOrder begins");
-        var createdOrderId = orderService.create();
-
-        redirectAttributes.addAttribute("id", createdOrderId);
-        redirectAttributes.addAttribute("newOrder", true);
-        log.info("OrderWebController::placeAnOrder ends. Redirecting -> /orders/{}", createdOrderId);
-        return "redirect:/orders/{id}";
+        return orderService.create()
+                .map(createdOrderId -> Rendering
+                        .redirectTo("/orders/{id}?newOrder=true")
+                        .modelAttribute("id", createdOrderId)
+                        .build())
+                .doOnSuccess(rendering ->
+                        log.info("OrderWebController::placeAnOrder ends. Redirecting -> {}", rendering)
+                );
     }
 }

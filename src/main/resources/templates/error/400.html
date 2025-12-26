@@ -25,7 +25,7 @@
         <div class="col">
             <div class="alert alert-danger d-flex align-items-center" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <div th:text="${errorMessage ?: 'BAD_REQUEST'}"></div>
+                <div th:utext="${errorMessage ?: 'BAD_REQUEST'}"></div>
             </div>
         </div>
     </div>
