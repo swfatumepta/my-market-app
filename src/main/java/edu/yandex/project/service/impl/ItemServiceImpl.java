@@ -13,6 +13,7 @@ import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -32,10 +33,10 @@ public class ItemServiceImpl implements ItemService {
     private final ItemViewMapper itemViewMapper;
 
     @Override
+    @Cacheable(value = "showcase", key = "#pageableRequest")
     @Transactional(readOnly = true)
     public Mono<ItemListPageView> findAll(@NonNull ItemsPageableRequest pageableRequest) {
         log.debug("ItemServiceImpl::findAll {} in", pageableRequest);
-        // todo получать данные из кеша (если кеш пуст, то сперва следует данные в него положить)
         return itemPageableRepository.findAllWithCartCount(
                         pageableRequest.search(),
                         pageableRequest.sort().name(),
@@ -49,10 +50,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Cacheable(value = "itemView", key = "#itemId")
     @Transactional(readOnly = true)
     public Mono<ItemView> findOne(@NonNull Long itemId) {
         log.debug("ItemServiceImpl::findOne {} in", itemId);
-        // todo получать данные из кеша (если кеш пуст, то сперва следует данные в него положить)
         return itemRepository.findById(itemId)
                 .switchIfEmpty(Mono.error(() -> {
                     log.error("ItemServiceImpl::findOne {} not found", itemId);

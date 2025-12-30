@@ -14,6 +14,8 @@ import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.CartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,10 +39,10 @@ public class CartServiceImpl implements CartService {
     private final ItemViewMapper itemViewMapper;
 
     @Override
+    @Cacheable(value = "cartView", key = "#root.methodName")
     @Transactional
     public Mono<CartView> getCartContent() {
         log.debug("CartServiceImpl::getCartContent in");
-        // todo получать данные из кеша (если кеш пуст, то сперва следует данные в него положить)
         return this.getCart().flatMap(cart ->
                 cartItemRepository.findAllByCartId(cart.getId())
                         .collectList()
@@ -50,6 +52,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @CacheEvict(value = "cartView", allEntries = true)
     @Transactional
     public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction) {
         log.debug("CartServiceImpl::updateCart {} in", cartItemAction);
@@ -154,6 +157,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @CacheEvict(value = "cartView", allEntries = true)
     @Transactional
     public Mono<Void> deleteCart() {
         log.info("CartServiceImpl::deleteCart begins");

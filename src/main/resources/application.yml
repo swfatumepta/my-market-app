@@ -23,7 +23,7 @@ spring:
       port: 6379
   cache:
     redis:
-      time-to-live: PT2M
+      time-to-live: PT3M
 
 items:
   view:
