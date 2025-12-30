@@ -59,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public Mono<Long> create() {
         log.debug("OrderServiceImpl::create in");
+        // todo осуществить запрос в сервис платежей, и обработать ответ
         // get current cart state
         return cartService.getCartContent()
                 .filter(cartView -> !cartView.items().isEmpty())

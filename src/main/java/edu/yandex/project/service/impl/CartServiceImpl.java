@@ -40,6 +40,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public Mono<CartView> getCartContent() {
         log.debug("CartServiceImpl::getCartContent in");
+        // todo получать данные из кеша (если кеш пуст, то сперва следует данные в него положить)
         return this.getCart().flatMap(cart ->
                 cartItemRepository.findAllByCartId(cart.getId())
                         .collectList()
