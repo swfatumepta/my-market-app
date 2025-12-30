@@ -5,8 +5,9 @@ services:
     environment:
       - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/ya_market
       - SPRING_JDBC_URL=jdbc:postgresql://postgres:5432/ya_market
-      - SPRING_DBC_USERNAME=root
-      - SPRING_DBC_PASSWORD=root
+      - SPRING_DBC_USERNAME=${DEV_USERNAME}
+      - SPRING_DBC_PASSWORD=${DEV_PASSWORD}
+      - VALKEY_PASSWORD=${DEV_PASSWORD}
       - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
     ports:
       - "8080:8080"
@@ -15,18 +16,31 @@ services:
       - ftmpt-market
     depends_on:
       - postgres
+      - valkey
 
   postgres:
     image: postgres:16.11-alpine3.22
     restart: unless-stopped
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
+      POSTGRES_USER: ${DEV_USERNAME}
+      POSTGRES_PASSWORD: ${DEV_PASSWORD}
       POSTGRES_DB: ya_market
     ports:
       - "5433:5432"
     volumes:
       - ./db_data:/var/lib/postgresql/data
+    networks:
+      - ftmpt-market
+
+  valkey:
+    image: valkey/valkey:8.1.5-alpine3.23
+    restart: unless-stopped
+    command: >-
+      valkey-server
+      --maxmemory 128mb
+      --save ""
+    ports:
+      - "6379:6379"
     networks:
       - ftmpt-market
 
