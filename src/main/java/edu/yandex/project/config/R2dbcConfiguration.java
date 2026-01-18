@@ -11,6 +11,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
+// данные настройки нужны для вклчюения кастомных конверетров!
 @Configuration
 public class R2dbcConfiguration extends AbstractR2dbcConfiguration {
 
