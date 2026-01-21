@@ -15,7 +15,8 @@ public class ITPostgreSQLContainer extends PostgreSQLContainer<ITPostgreSQLConta
     public static ITPostgreSQLContainer CONTAINER = new ITPostgreSQLContainer()
             .withDatabaseName(DATABASE_NAME)
             .withUsername(USERNAME)
-            .withPassword(PASSWORD);
+            .withPassword(PASSWORD)
+            .withCreateContainerCmdModifier(cmd -> cmd.withName("postgres-container-test"));
 
     public ITPostgreSQLContainer() {
         super(IMAGE_VERSION);

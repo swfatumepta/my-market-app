@@ -115,7 +115,6 @@ public class CartServiceCacheIT extends AbstractCacheIT {
         when(itemViewMapper.fromItemWithCount(any(), any())).thenReturn(expectedCachedData);
     }
 
-
     private static ItemView getTestItemView() {
         return ItemView.builder()
                 .id(CART_ITEM_ID.itemId())
