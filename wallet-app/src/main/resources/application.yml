@@ -1,0 +1,25 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: wallet
+
+wallet:
+  key: default
+  amount: 10_000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: debug
+
+logging:
+  level:
+    edu.yandex.project: DEBUG
+
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter: DEBUG
+    org.springframework.web.servlet.view.RedirectView: DEBUG

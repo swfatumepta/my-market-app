@@ -12,6 +12,7 @@
 
     <modules>
         <module>market-app</module>
+        <module>wallet-app</module>
     </modules>
 
     <properties>
@@ -27,6 +28,7 @@
 
         <testcontainers-bom.version>2.0.3</testcontainers-bom.version>
 
+        <openapi-generator-maven-plugin.version>7.16.0</openapi-generator-maven-plugin.version>
         <spring-boot-maven-plugin.version>${spring.boot.version}</spring-boot-maven-plugin.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
@@ -134,6 +136,11 @@
                     <configuration>
                         <classesDirectory>${project.build.outputDirectory}</classesDirectory>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.openapitools</groupId>
+                    <artifactId>openapi-generator-maven-plugin</artifactId>
+                    <version>${openapi-generator-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
