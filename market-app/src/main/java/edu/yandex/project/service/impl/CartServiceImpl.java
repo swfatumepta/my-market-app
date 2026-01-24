@@ -2,6 +2,7 @@ package edu.yandex.project.service.impl;
 
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.CartView;
+import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.domain.Cart;
 import edu.yandex.project.domain.CartItem;
 import edu.yandex.project.domain.Item;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -67,6 +69,14 @@ public class CartServiceImpl implements CartService {
                                 }))
                 .then()
                 .doOnSuccess(ignored -> log.debug("CartServiceImpl::updateCart {} out", cartItemAction));
+    }
+
+    @Override
+    @CacheEvict(value = "showcase", key = "#requestParameters")
+    @Transactional
+    public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction, @NonNull ItemsPageableRequest requestParameters) {
+        log.debug("CartServiceImpl::updateCart {}, {} in", cartItemAction, requestParameters);
+        return this.updateCart(cartItemAction);
     }
 
     private Mono<Void> removeItems(@NonNull Optional<CartItem> optionalCartItem, @NonNull Cart cart, @NonNull Item item) {
@@ -157,7 +167,10 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @CacheEvict(value = "cartView", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "cartView", allEntries = true),
+            @CacheEvict(value = "showcase", allEntries = true)
+    })
     @Transactional
     public Mono<Void> deleteCart() {
         log.info("CartServiceImpl::deleteCart begins");

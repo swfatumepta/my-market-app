@@ -1,6 +1,9 @@
+server:
+  port: 8080
+
 spring:
   application:
-    name: my-market-app
+    name: market-app
 
   r2dbc:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5433/ya_market}
@@ -19,8 +22,9 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${VALKEY_HOST:localhost}
+      port: ${VALKEY_PORT:6379}
+      password: ${VALKEY_PASSWORD:root}
   cache:
     redis:
       time-to-live: PT3M
@@ -28,7 +32,6 @@ spring:
 items:
   view:
     table.size: 3
-
 ---
 spring:
   config:

@@ -1,12 +1,17 @@
 services:
+
   market-app:
-    build: .
+    build:
+      context: market-app
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/ya_market
       - SPRING_JDBC_URL=jdbc:postgresql://postgres:5432/ya_market
       - SPRING_DBC_USERNAME=${DEV_USERNAME}
       - SPRING_DBC_PASSWORD=${DEV_PASSWORD}
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
       - VALKEY_PASSWORD=${DEV_PASSWORD}
       - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
     ports:
@@ -37,6 +42,7 @@ services:
     restart: unless-stopped
     command: >-
       valkey-server
+      --requirepass ${DEV_PASSWORD}
       --maxmemory 128mb
       --save ""
     ports:

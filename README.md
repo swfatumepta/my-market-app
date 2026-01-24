@@ -12,9 +12,9 @@
 1) PostgreSQL свои данные будет хрнаить в корне в директории /[db_data](db_data)
 - при первом запуске приложения в БД будут загружены тестовые данные
 - если необхродима повторная загрузка и сброс состояния БД, то переключите параметр spring.liquibase.drop-first в true
-  (в [application.yml](src/main/resources/application.yml))
+  (в [application.yml](market-app/src/main/resources/application.yml))
 ---
 2) Для активации remote debug требуется установить значение переменной ENABLE_DEBUG=true в [.env](.env)
-- так же, включает дополнительное логирование (какое, можно посомтреть в [application.yml](src/main/resources/application.yml))
+- так же, включает дополнительное логирование (какое, можно посомтреть в [application.yml](market-app/src/main/resources/application.yml))
 3) Remote DEBUG доступен по localhost:8000
 

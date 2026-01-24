@@ -48,7 +48,7 @@ public class ItemWebController {
     public Mono<Rendering> updateCartFromItemsShowcase(@Valid @NotNull @ModelAttribute CartItemAction cartItemAction,
                                                        @Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters) {
         log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
-        return cartService.updateCart(cartItemAction)
+        return cartService.updateCart(cartItemAction, requestParameters)
                 .thenReturn(Rendering
                         .redirectTo("/items?pageNumber={pageNumber}&pageSize={pageSize}&search={search}&sort={sort}")
                         .modelAttribute(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber())
