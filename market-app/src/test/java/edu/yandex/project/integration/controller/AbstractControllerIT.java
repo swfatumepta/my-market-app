@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 @AutoConfigureWebTestClient
-@ActiveProfiles({"test", "debug"})
+@ActiveProfiles("test")
 @SpringBootTest
 public class AbstractControllerIT extends AbstractDbIT {
     protected final static String CART_ROOT = "/cart/items";
