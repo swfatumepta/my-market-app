@@ -1,6 +1,10 @@
 server:
   port: 8080
 
+integration:
+  wallet:
+    url: http://localhost:8081
+
 spring:
   application:
     name: market-app
