@@ -59,13 +59,25 @@
             </div>
         </div>
     </div>
+    <!-- Недостаточно средств -->
+    <div class="row p-2" th:if="${HAS_ENOUGH_MONEY != null and !HAS_ENOUGH_MONEY}">
+        <div class="col">
+            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>Недостаточно средств для оформления заказа</div>
+            </div>
+        </div>
+    </div>
     <!-- Форма "Купить" только если есть товары -->
     <div class="row p-2" th:if="${items != null and !#lists.isEmpty(items)}">
         <div class="col">
             <form action="/orders/place-an-order" method="post">
                 <div class="hstack gap-3">
                     <h2 th:text="'Итого: '+${total}+' руб.'"/>
-                    <button class="btn btn-warning ms-auto">Купить</button>
+                    <button class="btn btn-warning ms-auto"
+                            th:disabled="${HAS_ENOUGH_MONEY != null and !HAS_ENOUGH_MONEY}">
+                        Купить
+                    </button>
                 </div>
             </form>
         </div>

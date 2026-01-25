@@ -1,7 +1,5 @@
 package edu.yandex.project.service.impl;
 
-import edu.yandex.project.client.WalletApi;
-import edu.yandex.project.client.dto.BalanceChangeRequest;
 import edu.yandex.project.controller.dto.OrderView;
 import edu.yandex.project.domain.Order;
 import edu.yandex.project.domain.OrderItem;
@@ -12,6 +10,7 @@ import edu.yandex.project.repository.OrderItemRepository;
 import edu.yandex.project.repository.OrderRepository;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.OrderService;
+import edu.yandex.project.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -33,8 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
 
     private final CartService cartService;
-
-    private final WalletApi walletClient;
+    private final WalletService walletService;
 
     private final OrderItemViewMapper orderItemViewMapper;
 
@@ -92,15 +90,10 @@ public class OrderServiceImpl implements OrderService {
                                         .thenReturn(order);
                             })
                             // withdraw money from wallet
-                            .flatMap(order -> walletClient.withdraw(
-                                                    new BalanceChangeRequest().amount(order.getTotalCost())
-                                            )
-                                            .doOnSuccess(createdOrderId ->
-                                                    log.debug("OrderServiceImpl::create wallet withdraw success")
-                                            )
-                                            // remove cart
-                                            .then(cartService.deleteCart())
-                                            .thenReturn(order.getId())
+                            .flatMap(order -> walletService.withdraw(order.getTotalCost())
+                                    // remove cart
+                                    .then(cartService.deleteCart())
+                                    .thenReturn(order.getId())
                             );
                 })
                 .doOnSuccess(createdOrderId -> log.debug("OrderServiceImpl::create out. Result: {}", createdOrderId));
