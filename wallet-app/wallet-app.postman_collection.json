@@ -1,0 +1,89 @@
+{
+	"info": {
+		"_postman_id": "f256ad36-905b-4630-9be3-8631b0adba07",
+		"name": "wallet-app",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50353895",
+		"_collection_link": "https://galactic-meadow-882720.postman.co/workspace/Mikhail's-Workspace~17cf226c-1424-4236-8d1b-b0c380d98b44/collection/50353895-f256ad36-905b-4630-9be3-8631b0adba07?action=share&source=collection_link&creator=50353895"
+	},
+	"item": [
+		{
+			"name": "GET balance",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/wallet/balance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"wallet",
+						"balance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST withdraw",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/wallet/withdraw",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"wallet",
+						"withdraw"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST deposit",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"amount\": 1000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/wallet/deposit",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"wallet",
+						"deposit"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -23,6 +23,21 @@ services:
       - postgres
       - valkey
 
+  wallet-app:
+    build:
+      context: wallet-app
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+    ports:
+      - "8081:8081"
+      - "8001:8001"
+    networks:
+      - ftmpt-market
+    depends_on:
+      - market-app
+
   postgres:
     image: postgres:16.11-alpine3.22
     restart: unless-stopped
