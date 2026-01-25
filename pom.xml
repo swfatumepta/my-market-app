@@ -121,7 +121,6 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot-maven-plugin.version}</version>
                 </plugin>
-
                 <!-- плагин для настройки прогона юнит-тестов -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
