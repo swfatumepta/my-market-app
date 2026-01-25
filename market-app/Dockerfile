@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jre-alpine-3.22
 
 COPY target/market-app.jar /app/app.jar
-COPY market-app_entrypoint.sh /app/app_entrypoint.sh
+COPY market_app_entrypoint.sh /app/app_entrypoint.sh
 
 RUN addgroup -g 1234 -S app_user_group \
     && adduser -u 1234 -S app_user -G app_user_group
