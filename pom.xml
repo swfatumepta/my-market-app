@@ -16,7 +16,7 @@
     </modules>
 
     <properties>
-        <openapi.spec>${project.basedir}/openapi/wallet-api.yaml</openapi.spec>
+        <openapi.dir>${maven.multiModuleProjectDirectory}/openapi</openapi.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 

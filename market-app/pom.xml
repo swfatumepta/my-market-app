@@ -153,6 +153,35 @@
                     </includes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generatorName>java</generatorName>
+
+                            <inputSpec>${openapi.dir}/wallet-api.yaml</inputSpec>
+                            <output>${project.build.directory}/generated-sources/openapi-client</output>
+
+                            <apiPackage>edu.yandex.project.client</apiPackage>
+                            <modelPackage>edu.yandex.project.client.dto</modelPackage>
+
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <library>webclient</library>
+                                <reactive>true</reactive>
+                                <useJakartaEe>true</useJakartaEe>
+                                <openApiNullable>false</openApiNullable>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

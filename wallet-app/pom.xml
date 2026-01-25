@@ -103,7 +103,8 @@
                         </goals>
                         <configuration>
                             <generatorName>spring</generatorName>
-                            <inputSpec>${openapi.spec}</inputSpec>
+
+                            <inputSpec>${openapi.dir}/wallet-api.yaml</inputSpec>
                             <output>${project.build.directory}/generated-sources/openapi</output>
 
                             <apiPackage>edu.yandex.project.wallet.api</apiPackage>
