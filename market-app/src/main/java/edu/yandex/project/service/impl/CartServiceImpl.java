@@ -45,16 +45,18 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public Mono<CartView> getCartContent() {
         log.debug("CartServiceImpl::getCartContent in");
-        return this.getCart().flatMap(cart ->
-                cartItemRepository.findAllByCartId(cart.getId())
-                        .collectList()
-                        .flatMap(this::joinItemAndMap)
-                        .doOnSuccess(cartView -> log.debug("CartServiceImpl::getCartContent out. Result: {}", cartView))
+        return this.getCart().flatMap(cart -> cartItemRepository.findAllByCartId(cart.getId())
+                .collectList()
+                .flatMap(this::joinItemAndMap)
+                .doOnSuccess(cartView -> log.debug("CartServiceImpl::getCartContent out. Result: {}", cartView))
         );
     }
 
     @Override
-    @CacheEvict(value = "cartView", allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "cartView", allEntries = true),
+            @CacheEvict(value = "showcase", allEntries = true)
+    })
     @Transactional
     public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction) {
         log.debug("CartServiceImpl::updateCart {} in", cartItemAction);
@@ -72,7 +74,10 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @CacheEvict(value = "showcase", key = "#requestParameters")
+    @Caching(evict = {
+            @CacheEvict(value = "cartView", allEntries = true),
+            @CacheEvict(value = "showcase", key = "#requestParameters")
+    })
     @Transactional
     public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction, @NonNull ItemsPageableRequest requestParameters) {
         log.debug("CartServiceImpl::updateCart {}, {} in", cartItemAction, requestParameters);

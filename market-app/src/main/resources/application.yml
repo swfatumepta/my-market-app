@@ -21,7 +21,7 @@ spring:
     password: ${spring.r2dbc.password}
     # main settings
     change-log: classpath:db/changelog/db.changelog-master.xml
-    drop-first: true
+    drop-first: false
     enabled: true
 
   data:

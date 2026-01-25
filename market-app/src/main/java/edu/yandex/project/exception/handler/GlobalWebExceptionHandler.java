@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.result.view.Rendering;
 import reactor.core.publisher.Mono;
 
@@ -62,6 +63,16 @@ public class GlobalWebExceptionHandler {
         return Mono.just(Rendering
                 .view(ERR_DIR_NAME + exc.getStatusCode().value())
                 .modelAttribute(ERR_MESSAGE_KEY, exc.getMessage())
+                .status(exc.getStatusCode())
+                .build());
+    }
+
+    @ExceptionHandler(WebClientResponseException.class)
+    public Mono<Rendering> handleWebClientResponseException(WebClientResponseException exc) {
+        log.error("GlobalWebExceptionHandler::handleWebClientResponseException {}", exc.getResponseBodyAsString(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + exc.getStatusCode().value())
+                .modelAttribute(ERR_MESSAGE_KEY, exc.getResponseBodyAsString())
                 .status(exc.getStatusCode())
                 .build());
     }

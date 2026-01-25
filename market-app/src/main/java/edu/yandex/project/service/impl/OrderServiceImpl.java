@@ -1,5 +1,7 @@
 package edu.yandex.project.service.impl;
 
+import edu.yandex.project.client.WalletApi;
+import edu.yandex.project.client.dto.BalanceChangeRequest;
 import edu.yandex.project.controller.dto.OrderView;
 import edu.yandex.project.domain.Order;
 import edu.yandex.project.domain.OrderItem;
@@ -12,6 +14,8 @@ import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
 
     private final CartService cartService;
+
+    private final WalletApi walletClient;
 
     private final OrderItemViewMapper orderItemViewMapper;
 
@@ -56,10 +62,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "cartView", allEntries = true),
+            @CacheEvict(value = "showcase", allEntries = true)
+    })
     @Transactional
     public Mono<Long> create() {
         log.debug("OrderServiceImpl::create in");
-        // todo осуществить запрос в сервис платежей, и обработать ответ
         // get current cart state
         return cartService.getCartContent()
                 .filter(cartView -> !cartView.items().isEmpty())
@@ -79,9 +88,20 @@ public class OrderServiceImpl implements OrderService {
                                 orderItems.forEach(orderItem -> orderItem.setOrderId(order.getId()));
                                 // save order_items
                                 return orderItemRepository.saveAll(orderItems)
-                                        .then(cartService.deleteCart())
-                                        .thenReturn(order.getId());
-                            });
+                                        .then()
+                                        .thenReturn(order);
+                            })
+                            // withdraw money from wallet
+                            .flatMap(order -> walletClient.withdraw(
+                                                    new BalanceChangeRequest().amount(order.getTotalCost())
+                                            )
+                                            .doOnSuccess(createdOrderId ->
+                                                    log.debug("OrderServiceImpl::create wallet withdraw success")
+                                            )
+                                            // remove cart
+                                            .then(cartService.deleteCart())
+                                            .thenReturn(order.getId())
+                            );
                 })
                 .doOnSuccess(createdOrderId -> log.debug("OrderServiceImpl::create out. Result: {}", createdOrderId));
     }
