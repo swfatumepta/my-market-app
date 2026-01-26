@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.result.view.Rendering;
 import reactor.core.publisher.Mono;
@@ -26,6 +27,7 @@ public class GlobalWebExceptionHandler {
     private final static String ERR_DIR_NAME = "/error/";
     private final static String ERR_MESSAGE_KEY = "errorMessage";
     private final static String VALUE_REJECTED_TEMPLATE = "{0}: value rejected = {1}";
+    private final static String WALLET_SERVICE_UNAVAILABLE = "Wallet service unavailable";
 
     @ExceptionHandler(AbstractProjectException.class)
     public Mono<Rendering> handleAbstractProjectException(AbstractProjectException exc) {
@@ -77,12 +79,23 @@ public class GlobalWebExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(WebClientRequestException.class)
+    public Mono<Rendering> handleWebClientRequestException(WebClientRequestException exc) {
+        log.error("GlobalWebExceptionHandler::handleWebClientRequestException {}", exc.getMessage(), exc);
+        return Mono.just(Rendering
+                .view(ERR_DIR_NAME + HttpStatus.SERVICE_UNAVAILABLE.value())
+                .modelAttribute(ERR_MESSAGE_KEY, WALLET_SERVICE_UNAVAILABLE)
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .build());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public Mono<Rendering> handleRuntimeException(RuntimeException exc) {
         log.error("GlobalWebExceptionHandler::handleRuntimeException {}", exc.getMessage(), exc);
         return Mono.just(Rendering
                 .view(ERR_DIR_NAME + HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .modelAttribute(ERR_MESSAGE_KEY, exc.getMessage())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .build());
     }
 
