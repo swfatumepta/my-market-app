@@ -26,6 +26,7 @@ public class CartWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
         var viewIdentifyingText = "500 - INTERNAL_SERVER_ERROR";
         var expectedMessages = "More than one cart found";
         // when
+        when(mockedWalletService.getBalance()).thenReturn(Mono.just(1L));
         when(mockedCartRepository.findAll()).thenReturn(Flux.fromIterable(List.of(new Cart(), new Cart())));
 
         webTestClient.get()

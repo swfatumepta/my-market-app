@@ -1,5 +1,6 @@
 package edu.yandex.project.integration.controller;
 
+import edu.yandex.project.client.dto.BalanceResponse;
 import edu.yandex.project.domain.CartItem;
 import edu.yandex.project.domain.Item;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 import java.util.List;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 import static java.text.MessageFormat.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @Slf4j
 @Tag("OrderWebControllerIT")
@@ -54,9 +58,9 @@ public class OrderWebControllerIT extends AbstractControllerIT {
                 .map(CartItem::getTotalCost)
                 .reduce(0L, Long::sum);
 
-        var itemsMap = getItemsMap(cartItems);
+        var itemsMap = this.getItemsMap(cartItems);
         // when
-        placeAnOrder();
+        this.placeAnOrder();
         // then
         webTestClient.get()
                 .uri(ORDERS_ROOT)
@@ -95,7 +99,7 @@ public class OrderWebControllerIT extends AbstractControllerIT {
 
         var itemsMap = getItemsMap(cartItems);
         // when
-        placeAnOrder();
+        this.placeAnOrder();
         // then
         webTestClient.get()
                 .uri(ORDERS_ROOT + "/1?newOrder=true")
@@ -127,6 +131,8 @@ public class OrderWebControllerIT extends AbstractControllerIT {
 
     private void placeAnOrder() {
         // when
+        when(mockedWalletClient.withdraw(any())).thenReturn(Mono.just(new BalanceResponse().balance(Long.MAX_VALUE)));
+
         webTestClient.post()
                 .uri(PLACE_AN_ORDER_URI)
                 // then

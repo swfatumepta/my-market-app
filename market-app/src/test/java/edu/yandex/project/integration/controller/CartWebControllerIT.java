@@ -1,18 +1,27 @@
 package edu.yandex.project.integration.controller;
 
+import edu.yandex.project.client.dto.BalanceResponse;
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.enums.CartAction;
 import edu.yandex.project.domain.Item;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @Tag("ItemWebControllerIT")
 public class CartWebControllerIT extends AbstractControllerIT {
+
+    @BeforeEach
+    void mockBalanceRequest() {
+        when(mockedWalletClient.getBalance()).thenReturn(Mono.just(new BalanceResponse().balance(Long.MAX_VALUE)));
+    }
 
     @Test
     void getCartItems_inCaseCartIsEmpty() {
@@ -34,8 +43,8 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var item = itemRepository.findById(2L).block();
         assertThat(item).isNotNull();
 
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
         // when
         webTestClient.get()
                 .uri(CART_ROOT)
@@ -76,14 +85,14 @@ public class CartWebControllerIT extends AbstractControllerIT {
                 .isNotEmpty()
                 .hasSize(3);
         // single item.id = 1
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getFirst().getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getFirst().getId()));
         // two item.id = 2
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.get(1).getId()));
         // three item.id = 3
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, items.getLast().getId()));
         // when
         webTestClient.get()
                 .uri(CART_ROOT)
@@ -130,10 +139,10 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var item = itemRepository.findById(2L).block();
         assertThat(item).isNotNull();
 
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
         // when
-        updateCartFromCartView(new CartItemAction(CartAction.DELETE, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.DELETE, item.getId()));
         // then
         webTestClient.get()
                 .uri(CART_ROOT)
@@ -155,10 +164,11 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var item2 = itemRepository.findById(2L).block();
         assertThat(item2).isNotNull();
 
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
         // when
-        updateCartFromCartView(new CartItemAction(CartAction.DELETE, item1.getId()));
+
+        this.updateCartFromCartView(new CartItemAction(CartAction.DELETE, item1.getId()));
         // then
         webTestClient.get()
                 .uri(CART_ROOT)
@@ -195,10 +205,10 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var item2 = itemRepository.findById(2L).block();
         assertThat(item2).isNotNull();
 
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item1.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item2.getId()));
         // when
-        updateCartFromCartView(new CartItemAction(CartAction.MINUS, item1.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.MINUS, item1.getId()));
         // then
         webTestClient.get()
                 .uri(CART_ROOT)
@@ -233,10 +243,10 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var item = itemRepository.findById(2L).block();
         assertThat(item).isNotNull();
 
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
-        updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.PLUS, item.getId()));
         // when
-        updateCartFromCartView(new CartItemAction(CartAction.MINUS, item.getId()));
+        this.updateCartFromCartView(new CartItemAction(CartAction.MINUS, item.getId()));
         // then
         webTestClient.get()
                 .uri(CART_ROOT)

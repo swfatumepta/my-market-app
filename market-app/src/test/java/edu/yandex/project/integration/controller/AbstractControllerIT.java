@@ -1,5 +1,6 @@
 package edu.yandex.project.integration.controller;
 
+import edu.yandex.project.client.WalletApi;
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.domain.Cart;
 import edu.yandex.project.domain.CartItem;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -45,6 +47,9 @@ public class AbstractControllerIT extends AbstractDbIT {
     protected OrderRepository orderRepository;
     @Autowired
     protected OrderItemRepository orderItemRepository;
+
+    @MockitoBean
+    protected WalletApi mockedWalletClient;
 
     @BeforeEach
     protected void dropData() {

@@ -10,6 +10,7 @@ import edu.yandex.project.factory.ItemListPageViewFactory;
 import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.mapper.OrderItemViewMapper;
 import edu.yandex.project.repository.*;
+import edu.yandex.project.service.WalletService;
 import edu.yandex.project.service.impl.CartServiceImpl;
 import edu.yandex.project.service.impl.ItemServiceImpl;
 import edu.yandex.project.service.impl.OrderServiceImpl;
@@ -63,4 +64,7 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     protected ItemViewMapper mockedItemViewMapper;
     @MockitoBean
     protected OrderItemViewMapper mockedOrderItemViewMapper;
+
+    @MockitoBean
+    protected WalletService mockedWalletService;
 }
