@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
       - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/ya_market
       - SPRING_JDBC_URL=jdbc:postgresql://postgres:5432/ya_market
       - SPRING_DBC_USERNAME=${DEV_USERNAME}
@@ -13,7 +14,7 @@ services:
       - VALKEY_HOST=valkey
       - VALKEY_PORT=6379
       - VALKEY_PASSWORD=${DEV_PASSWORD}
-      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+      - WALLET_APP=wallet-app
     ports:
       - "8080:8080"
       - "8000:8000"

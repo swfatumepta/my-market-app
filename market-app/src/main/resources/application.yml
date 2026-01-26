@@ -3,7 +3,7 @@ server:
 
 integration:
   wallet:
-    url: http://localhost:8081
+    url: http://${WALLET_APP:localhost}:8081
 
 spring:
   application:
