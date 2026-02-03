@@ -41,7 +41,7 @@ public class ItemServiceImpl implements ItemService {
         log.debug("ItemServiceImpl::findAllAsView {} in", pageableRequest);
         return itemPageableRepository.findAllWithCartCount(
                         pageableRequest.search(),
-                        pageableRequest.sort().name(),
+                        pageableRequest.sort(),
                         PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
                 )
                 .map(page -> itemListPageViewFactory.create(page, pageableRequest))

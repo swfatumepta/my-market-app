@@ -297,7 +297,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
     private Page<ItemJoinCartPageView> getItemJoinCartPageViews(ItemsPageableRequest queryWithSearchFilter) {
         var inCartItems = itemPageableRepository.findAllWithCartCount(
                         queryWithSearchFilter.search(),
-                        queryWithSearchFilter.sort().toString(),
+                        queryWithSearchFilter.sort(),
                         PageRequest.of(queryWithSearchFilter.pageNumber(), queryWithSearchFilter.pageSize())
                 )
                 .block();
