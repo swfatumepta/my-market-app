@@ -4,15 +4,12 @@ import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.PageInfo;
-import edu.yandex.project.mapper.ItemViewMapper;
-import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-import reactor.util.function.Tuple2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,18 +22,15 @@ public class ItemListPageViewFactory {
     @Value("${items.view.table.size:3}")
     private int itemViewTableSize;
 
-    private final ItemViewMapper itemViewMapper;
-
-    public ItemListPageView create(@NonNull Page<ItemJoinCartPageView> itemJoinCartPageViews,
-                                   @NonNull ItemsPageableRequest pageableRequest) {
-        log.debug("ItemPageFactory::create request = {}, fromDb = {} in", pageableRequest, itemJoinCartPageViews);
+    public ItemListPageView create(@NonNull Page<ItemView> itemViewPage, @NonNull ItemsPageableRequest request) {
+        log.debug("ItemPageFactory::create request = {}, fromDb = {} in", request, itemViewPage);
         var builder = ItemListPageView.builder()
-                .sort(pageableRequest.sort())
-                .search(pageableRequest.search())
-                .paging(PageInfo.from(itemJoinCartPageViews));
-        if (!itemJoinCartPageViews.getContent().isEmpty()) {
-            var itemViews = itemViewMapper.fromItemJoinCartViews(itemJoinCartPageViews.getContent());
+                .sort(request.sort())
+                .search(request.search())
+                .paging(PageInfo.from(itemViewPage));
 
+        var itemViews = itemViewPage.getContent();
+        if (!itemViews.isEmpty()) {
             var itemsViewTable = this.splitIntoParts(itemViews, itemViewTableSize);
             this.alignIfNeeded(itemsViewTable);
 
@@ -45,8 +39,7 @@ public class ItemListPageViewFactory {
             builder.items(List.of());
         }
         var built = builder.build();
-        log.debug("ItemPageFactory::create request = {}, fromDb = {} out. Result: {}",
-                pageableRequest, itemJoinCartPageViews, built);
+        log.debug("ItemPageFactory::create request = {}, fromDb = {} out. Result: {}", request, itemViewPage, built);
         return built;
     }
 

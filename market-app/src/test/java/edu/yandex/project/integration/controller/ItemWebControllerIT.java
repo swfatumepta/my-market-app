@@ -2,7 +2,7 @@ package edu.yandex.project.integration.controller;
 
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.enums.CartAction;
-import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
+import edu.yandex.project.domain.Item;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -101,7 +101,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
             assertThat(testItems).hasSize(1);
             var testItem = testItems.getFirst();
             // when
-            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.PLUS);
+            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.getId(), CartAction.PLUS);
             // validate item state in showcase after cart update
             webTestClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -120,9 +120,9 @@ public class ItemWebControllerIT extends AbstractControllerIT {
                     .isNotEmpty()
                     .hasSize(1);
             var cartItem = cartItems.getFirst();
-            assertThat(cartItem.getTotalCost()).isEqualTo(testItem.price());
+            assertThat(cartItem.getTotalCost()).isEqualTo(testItem.getPrice());
             assertThat(cartItem.getItemCount()).isEqualTo(1);
-            assertThat(cartItem.getId().itemId()).isEqualTo(testItem.id());
+            assertThat(cartItem.getId().itemId()).isEqualTo(testItem.getId());
             assertThat(cartItem.getId().cartId()).isNotNull();
         }
 
@@ -135,13 +135,13 @@ public class ItemWebControllerIT extends AbstractControllerIT {
             assertThat(testItems).hasSize(1);
             var testItem = testItems.getFirst();
             // add item to the cart
-            updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.PLUS);
+            updateCartItemFromShowcase(queryWithSearchFilter, testItem.getId(), CartAction.PLUS);
             // check if item added
             assertThat(cartRepository.count().block()).isEqualTo(1);
-            assertThat(Objects.requireNonNull(cartItemRepository.findCartItemByItemId(testItem.id()).block())
+            assertThat(Objects.requireNonNull(cartItemRepository.findCartItemByItemId(testItem.getId()).block())
                     .getItemCount()).isEqualTo(1);
             // when
-            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.id(), CartAction.MINUS);
+            var requestFormData = updateCartItemFromShowcase(queryWithSearchFilter, testItem.getId(), CartAction.MINUS);
             // validate item state in showcase after cart update
             webTestClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -156,7 +156,7 @@ public class ItemWebControllerIT extends AbstractControllerIT {
                     .value(htmlView -> validateItemInCartSign(htmlView, false));
             // check if cart updated
             assertThat(cartRepository.count().block()).isEqualTo(1);    // cart must not be deleted
-            assertThat(cartItemRepository.findCartItemByItemId(testItem.id()).block()).isNull();
+            assertThat(cartItemRepository.findCartItemByItemId(testItem.getId()).block()).isNull();
         }
     }
 
@@ -294,8 +294,8 @@ public class ItemWebControllerIT extends AbstractControllerIT {
         return requestFormData;
     }
 
-    private Page<ItemJoinCartPageView> getItemJoinCartPageViews(ItemsPageableRequest queryWithSearchFilter) {
-        var inCartItems = itemPageableRepository.findAllWithCartCount(
+    private Page<Item> getItemJoinCartPageViews(ItemsPageableRequest queryWithSearchFilter) {
+        var inCartItems = itemPageableRepository.findAll(
                         queryWithSearchFilter.search(),
                         queryWithSearchFilter.sort(),
                         PageRequest.of(queryWithSearchFilter.pageNumber(), queryWithSearchFilter.pageSize())
@@ -353,16 +353,16 @@ public class ItemWebControllerIT extends AbstractControllerIT {
             ArrayList<Long> expectedItemPrices,
             ArrayList<String> expectedItemPicLinks) {
 
-        public static DynamicParametersToBeChecked from(Page<ItemJoinCartPageView> expectedItems) {
+        public static DynamicParametersToBeChecked from(Page<Item> expectedItems) {
             var obj = new DynamicParametersToBeChecked(
                     new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>()
             );
             for (var itemView : expectedItems) {
-                obj.expectedItemIds.add(itemView.id());
-                obj.expectedItemTitles.add(itemView.title());
-                obj.expectedItemDescriptions.add(itemView.description());
-                obj.expectedItemPrices.add(itemView.price());
-                obj.expectedItemPicLinks.add(itemView.imgPath());
+                obj.expectedItemIds.add(itemView.getId());
+                obj.expectedItemTitles.add(itemView.getTitle());
+                obj.expectedItemDescriptions.add(itemView.getDescription());
+                obj.expectedItemPrices.add(itemView.getPrice());
+                obj.expectedItemPicLinks.add(itemView.getImgPath());
             }
             return obj;
         }

@@ -1,6 +1,7 @@
 package edu.yandex.project.repository;
 
 import edu.yandex.project.domain.CartItem;
+import edu.yandex.project.domain.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -8,6 +9,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collection;
 
 import static org.springframework.data.relational.core.query.Criteria.where;
 import static org.springframework.data.relational.core.query.Query.query;
@@ -24,6 +27,14 @@ public class CartItemRepository {
         return r2dbcEntityTemplate.select(CartItem.class)
                 .matching(query(where("cart_id").is(cartId)))
                 .all();
+    }
+
+    public Flux<CartItem> findAllByItems(@NonNull Collection<Item> items) {
+        log.debug("CartItemRepository::findAllByItemIds {} in", items);
+        return Flux.fromIterable(items)
+                .distinct()
+                .map(Item::getId)
+                .flatMap(this::findAllByItemIds);
     }
 
     // т.к. корзина только одна поэтому такой подход работает
@@ -83,5 +94,11 @@ public class CartItemRepository {
                 .all()
                 .doOnSuccess(affectedRows -> log.debug("CartItemRepository::delete {} out", affectedRows))
                 .then();
+    }
+
+    private Flux<CartItem> findAllByItemIds(Long itemIds) {
+        return r2dbcEntityTemplate.select(CartItem.class)
+                .matching(query(where("item_id").in(itemIds)))
+                .all();
     }
 }

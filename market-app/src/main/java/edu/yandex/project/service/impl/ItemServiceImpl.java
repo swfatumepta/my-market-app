@@ -14,6 +14,8 @@ import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -33,17 +35,19 @@ public class ItemServiceImpl implements ItemService {
     private final ItemPageableRepository itemPageableRepository;
 
     private final ItemListPageViewFactory itemListPageViewFactory;
+
     private final ItemViewMapper itemViewMapper;
 
     @Override
     @Transactional
     public Mono<ItemListPageView> findAllAsView(@NonNull ItemsPageableRequest pageableRequest) {
         log.debug("ItemServiceImpl::findAllAsView {} in", pageableRequest);
-        return itemPageableRepository.findAllWithCartCount(
+        return itemPageableRepository.findAll(
                         pageableRequest.search(),
                         pageableRequest.sort(),
                         PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
                 )
+                .flatMap(this::enrichWithCartCountAndMap)
                 .map(page -> itemListPageViewFactory.create(page, pageableRequest))
                 .doOnSuccess(itemListPageView ->
                         log.debug("ItemServiceImpl::findAllAsView {} out. Result: {}", pageableRequest, itemListPageView)
@@ -60,7 +64,7 @@ public class ItemServiceImpl implements ItemService {
                     return new ItemNotFoundException(itemId);
                 }))
                 .zipWith(this.getInCartCount(itemId))
-                .map(itemViewMapper::fromTuple)
+                .map(itemWithCount -> itemViewMapper.fromItemWithCount(itemWithCount.getT1(), itemWithCount.getT2()))
                 .doOnSuccess(itemView ->
                         log.debug("ItemServiceImpl::findOneAsView {} out. Result: {}", itemId, itemView)
                 );
@@ -89,5 +93,17 @@ public class ItemServiceImpl implements ItemService {
         return cartItemRepository.findCartItemByItemId(itemId)
                 .map(CartItem::getItemCount)
                 .defaultIfEmpty(0L);
+    }
+
+    private Mono<Page<ItemView>> enrichWithCartCountAndMap(Page<Item> itemsPage) {
+        return cartItemRepository.findAllByItems(itemsPage.getContent())
+                .collectMap(cartItem -> cartItem.getId().itemId(), CartItem::getItemCount)
+                .map(inCartCountMap -> itemsPage.getContent().stream()
+                        .map(item -> itemViewMapper.fromItemWithCount(
+                                item, inCartCountMap.getOrDefault(item.getId(), 0L)
+                        ))
+                        .toList()
+                )
+                .map(itemViews -> new PageImpl<>(itemViews, itemsPage.getPageable(), itemsPage.getTotalElements()));
     }
 }

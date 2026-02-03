@@ -1,7 +1,7 @@
 package edu.yandex.project.repository;
 
 import edu.yandex.project.controller.dto.enums.ItemSort;
-import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
+import edu.yandex.project.domain.Item;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 import lombok.RequiredArgsConstructor;
@@ -29,23 +29,19 @@ public class ItemPageableRepository {
 
     private final DatabaseClient databaseClient;
 
-    public Mono<Page<ItemJoinCartPageView>> findAllWithCartCount(@NonNull String textFilter,
-                                                                 @NonNull ItemSort sortRule,
-                                                                 @NonNull Pageable pageable) {
-        log.debug("ItemPageableRepository::findAllWithCartCount {}, {}, {} in", textFilter, sortRule, pageable);
+    public Mono<Page<Item>> findAll(@NonNull String textFilter, @NonNull ItemSort sortRule, @NonNull Pageable pageable) {
+        log.debug("ItemPageableRepository::findAll {}, {}, {} in", textFilter, sortRule, pageable);
         var query = """
                 SELECT
-                    i.id,
-                    i.title,
-                    i.description,
-                    i.img_path,
-                    i.price,
-                    COALESCE(SUM(ci.items_count), 0) AS in_cart_count,
+                    id,
+                    title,
+                    description,
+                    img_path,
+                    price,
                     COUNT(*) OVER() AS total_count
-                FROM items i
-                LEFT JOIN cart_item ci ON i.id = ci.item_id
-                WHERE i.title ILIKE :textFilter OR i.description ILIKE :textFilter
-                GROUP BY i.id, i.title, i.description, i.img_path, i.price
+                FROM items
+                WHERE title ILIKE :textFilter OR description ILIKE :textFilter
+                GROUP BY id, title, description, img_path, price
                 ORDER BY :sortRule
                 LIMIT :limit OFFSET :offset
                 """;
@@ -60,36 +56,35 @@ public class ItemPageableRepository {
                 .collectList()
                 .map(itemsWithTotal -> mapToPage(pageable, itemsWithTotal))
                 .doOnSuccess(result ->
-                        log.debug("ItemPageableRepository::findAllWithCartCount {}, {}, {} out. Result: {}",
+                        log.debug("ItemPageableRepository::findAll {}, {}, {} out. Result: {}",
                                 textFilter, sortRule, pageable, result)
                 );
     }
 
-    private static Page<ItemJoinCartPageView> mapToPage(Pageable pageable, List<ItemsWithTotal> itemsWithTotal) {
+    private static Page<Item> mapToPage(Pageable pageable, List<ItemsWithTotal> itemsWithTotal) {
         if (itemsWithTotal.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
         var total = itemsWithTotal.getFirst().total();
-        var itemJoinCartPageViews = itemsWithTotal.stream()
+        var items = itemsWithTotal.stream()
                 .map(ItemsWithTotal::item)
                 .toList();
-        return new PageImpl<>(itemJoinCartPageViews, pageable, total);
+        return new PageImpl<>(items, pageable, total);
     }
 
     private static ItemsWithTotal mapRow(Row row, RowMetadata rowMetadata) {
         return new ItemsWithTotal(
-                ItemJoinCartPageView.builder()
+                Item.builder()
                         .id(row.get("id", Long.class))
                         .title(row.get("title", String.class))
                         .description(row.get("description", String.class))
                         .imgPath(row.get("img_path", String.class))
                         .price(row.get("price", Long.class))
-                        .inCartCount(row.get("in_cart_count", Long.class))
                         .build(),
                 (row.get("total_count", Long.class))
         );
     }
 
-    private record ItemsWithTotal(ItemJoinCartPageView item, Long total) {
+    private record ItemsWithTotal(Item item, Long total) {
     }
 }

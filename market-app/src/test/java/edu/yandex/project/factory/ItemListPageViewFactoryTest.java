@@ -5,7 +5,6 @@ import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.controller.dto.PageInfo;
 import edu.yandex.project.controller.dto.enums.ItemSort;
 import edu.yandex.project.mapper.ItemViewMapper;
-import edu.yandex.project.repository.util.view.ItemJoinCartPageView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +20,6 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ItemListPageViewFactoryTest {
@@ -42,7 +40,7 @@ class ItemListPageViewFactoryTest {
     @Test
     void create_inCasePageContentIsEmpty_shouldReturnItemListPageViewWithoutItems() {
         // given
-        var itemEntitiesPage = new PageImpl<ItemJoinCartPageView>(List.of(), PageRequest.of(0, 5), 0);
+        var itemEntitiesPage = new PageImpl<ItemView>(List.of(), PageRequest.of(0, 5), 0);
         var pageableRequest = new ItemsPageableRequest("", 0, 5, ItemSort.NO);
         // when
         var actualResult = factory.create(itemEntitiesPage, pageableRequest);
@@ -59,15 +57,11 @@ class ItemListPageViewFactoryTest {
     }
 
     @Test
-    void create_inCasePageContentHas1Element_shouldReturnFulfilledItemListPageView_and_itemsMustBeAligned() {
+    void create_inCasePageContentHasSingleItem_shouldReturnFulfilledItemListPageView_and_itemsMustBeAligned() {
         // given
-        var itemJoinCartPageView = ItemJoinCartPageView.builder().id(1L).build();
-        var itemEntitiesPage = new PageImpl<>(List.of(itemJoinCartPageView), PageRequest.of(0, 5), 2);
-
-        var mapperCallResult = List.of(ItemView.builder().id(1L).build());
+        var itemView = createSimpleItemView(1L);
+        var itemEntitiesPage = new PageImpl<>(List.of(itemView), PageRequest.of(0, 5), 2);
         // when
-        when(itemViewMapper.fromItemJoinCartViews(itemEntitiesPage.getContent())).thenReturn(mapperCallResult);
-
         var actualResult = factory.create(itemEntitiesPage, PAGEABLE_REQUEST);
         // then
         assertThat(actualResult).isNotNull();
@@ -85,17 +79,11 @@ class ItemListPageViewFactoryTest {
     @Test
     void create_inCasePageContentHas5Elements_shouldReturnFulfilledItemListPageView_and_itemsMustBeSplitApartAndAligned() {
         // given
-        var itemJoinCartPageViews = IntStream.range(1, 6)
-                .mapToObj(this::createSimpleItemJoinCartPageView)
+        var itemViews = IntStream.range(1, 6)
+                .mapToObj(this::createSimpleItemView)
                 .toList();
-        var itemEntitiesPage = new PageImpl<>(itemJoinCartPageViews, PageRequest.of(0, 50), 5);
-
-        var mapperCallResult = itemEntitiesPage.getContent().stream()
-                .map(this::createSimpleItemView)
-                .toList();
+        var itemEntitiesPage = new PageImpl<>(itemViews, PageRequest.of(0, 50), 5);
         // when
-        when(itemViewMapper.fromItemJoinCartViews(itemEntitiesPage.getContent())).thenReturn(mapperCallResult);
-
         var actualResult = factory.create(itemEntitiesPage, PAGEABLE_REQUEST);
         // then
         assertThat(actualResult).isNotNull();
@@ -116,17 +104,11 @@ class ItemListPageViewFactoryTest {
     @Test
     void create_inCasePageContentHas9Elements_shouldReturnFulfilledItemListPageView_and_itemsMustBeSplitApartAndAligned() {
         // given
-        var itemJoinCartPageViews = IntStream.range(1, 10)
-                .mapToObj(this::createSimpleItemJoinCartPageView)
+        var itemViews = IntStream.range(1, 10)
+                .mapToObj(this::createSimpleItemView)
                 .toList();
-        var itemEntitiesPage = new PageImpl<>(itemJoinCartPageViews, PageRequest.of(0, 50), 10);
-
-        var mapperCallResult = itemEntitiesPage.getContent().stream()
-                .map(this::createSimpleItemView)
-                .toList();
+        var itemEntitiesPage = new PageImpl<>(itemViews, PageRequest.of(0, 50), 10);
         // when
-        when(itemViewMapper.fromItemJoinCartViews(itemEntitiesPage.getContent())).thenReturn(mapperCallResult);
-
         var actualResult = factory.create(itemEntitiesPage, PAGEABLE_REQUEST);
         // then
         assertThat(actualResult).isNotNull();
@@ -152,7 +134,7 @@ class ItemListPageViewFactoryTest {
         assertThat(expectedStubsCount).isEqualTo(actualStubsCount);
     }
 
-    private static void validatePageInfo(PageInfo toBeValidated, PageImpl<ItemJoinCartPageView> itemEntitiesPage) {
+    private static void validatePageInfo(PageInfo toBeValidated, PageImpl<ItemView> itemEntitiesPage) {
         assertThat(toBeValidated).isNotNull();
         assertThat(toBeValidated.pageSize()).isEqualTo(itemEntitiesPage.getSize());
         assertThat(toBeValidated.pageNumber()).isEqualTo(itemEntitiesPage.getNumber());
@@ -160,11 +142,7 @@ class ItemListPageViewFactoryTest {
         assertThat(toBeValidated.hasNext()).isEqualTo(itemEntitiesPage.hasNext());
     }
 
-    private ItemView createSimpleItemView(ItemJoinCartPageView itemJoinCartPageView) {
-        return ItemView.builder().id(itemJoinCartPageView.id()).build();
-    }
-
-    private ItemJoinCartPageView createSimpleItemJoinCartPageView(long id) {
-        return ItemJoinCartPageView.builder().id(id).build();
+    private ItemView createSimpleItemView(long id) {
+        return ItemView.builder().id(id).build();
     }
 }
