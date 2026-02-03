@@ -2,25 +2,19 @@ package edu.yandex.project.service.impl;
 
 import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.CartView;
-import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.domain.Cart;
 import edu.yandex.project.domain.CartItem;
 import edu.yandex.project.domain.Item;
 import edu.yandex.project.exception.GeneralProjectException;
-import edu.yandex.project.exception.ItemNotFoundException;
 import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.repository.CartItemRepository;
 import edu.yandex.project.repository.CartRepository;
-import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.CartService;
+import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -36,12 +30,12 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ItemRepository itemRepository;
+
+    private final ItemService itemService;
 
     private final ItemViewMapper itemViewMapper;
 
     @Override
-    @Cacheable(value = "cartView", key = "#root.methodName")
     @Transactional
     public Mono<CartView> getCartContent() {
         log.debug("CartServiceImpl::getCartContent in");
@@ -53,14 +47,10 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @Caching(evict = {
-            @CacheEvict(value = "cartView", allEntries = true),
-            @CacheEvict(value = "showcase", allEntries = true)
-    })
     @Transactional
     public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction) {
         log.debug("CartServiceImpl::updateCart {} in", cartItemAction);
-        return this.getCart().zipWith(this.getItem(cartItemAction))
+        return this.getCart().zipWith(itemService.findOne(cartItemAction.itemId()))
                 .flatMap(tuple -> cartItemRepository.findById(buildId(tuple))
                         .singleOptional()
                         .flatMap(cartItem ->
@@ -73,24 +63,13 @@ public class CartServiceImpl implements CartService {
                 .doOnSuccess(ignored -> log.debug("CartServiceImpl::updateCart {} out", cartItemAction));
     }
 
-    @Override
-    @Caching(evict = {
-            @CacheEvict(value = "cartView", allEntries = true),
-            @CacheEvict(value = "showcase", key = "#requestParameters")
-    })
-    @Transactional
-    public Mono<Void> updateCart(@NonNull CartItemAction cartItemAction, @NonNull ItemsPageableRequest requestParameters) {
-        log.debug("CartServiceImpl::updateCart {}, {} in", cartItemAction, requestParameters);
-        return this.updateCart(cartItemAction);
-    }
-
     private Mono<Void> removeItems(@NonNull Optional<CartItem> optionalCartItem, @NonNull Cart cart, @NonNull Item item) {
         log.debug("CartServiceImpl::removeItems {} in", optionalCartItem);
         return optionalCartItem.map(cartItem -> cartItemRepository.delete(cartItem)
                         .doOnSuccess(ignored -> log.debug("CartServiceImpl::removeItems {} out. Removed: {}", cartItem, cartItem))
                         .then())
                 .orElse(Mono.error(() -> {
-                    log.error("CartServiceImpl::removeItems Item.id = {} not found in Cart.id = {}", cart.getId(), item.getId());
+                    log.error("CartServiceImpl::removeItems Item.id = {} not found in Cart.id = {}", item.getId(), cart.getId());
                     return new GeneralProjectException("Impossible event! Check it ASAP!");
                 }));
     }
@@ -131,14 +110,6 @@ public class CartServiceImpl implements CartService {
                 .then();
     }
 
-    private Mono<Item> getItem(CartItemAction cartItemAction) {
-        return itemRepository.findById(cartItemAction.itemId())
-                .switchIfEmpty(Mono.error(() -> {
-                    log.error("CartServiceImpl::updateCart {} not found", cartItemAction.itemId());
-                    return new ItemNotFoundException(cartItemAction.itemId());
-                }));
-    }
-
     private Mono<CartView> joinItemAndMap(List<CartItem> cartItems) {
         log.debug("CartServiceImpl::joinItemAndMap {}", cartItems);
         if (cartItems.isEmpty()) {
@@ -146,7 +117,7 @@ public class CartServiceImpl implements CartService {
         } else {
             var itemIdToCountMap = cartItems.stream()
                     .collect(Collectors.toMap(cartItem -> cartItem.getId().itemId(), CartItem::getItemCount));
-            return itemRepository.findAllById(itemIdToCountMap.keySet())
+            return itemService.findAll(itemIdToCountMap.keySet())
                     .map(item -> itemViewMapper.fromItemWithCount(item, itemIdToCountMap.get(item.getId())))
                     .collectList()
                     .map(CartView::fromItemViews);
@@ -157,7 +128,8 @@ public class CartServiceImpl implements CartService {
      * В текущей версии приложения предполагается, что есть только одна глобальная корзина для покупок
      * @return {@link Cart}
      */
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Override
+    @Transactional
     public Mono<Cart> getCart() {
         log.debug("CartServiceImpl::getCart");
         return cartRepository.findAll()
@@ -172,10 +144,6 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @Caching(evict = {
-            @CacheEvict(value = "cartView", allEntries = true),
-            @CacheEvict(value = "showcase", allEntries = true)
-    })
     @Transactional
     public Mono<Void> deleteCart() {
         log.info("CartServiceImpl::deleteCart begins");

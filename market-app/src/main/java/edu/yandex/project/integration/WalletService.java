@@ -1,4 +1,4 @@
-package edu.yandex.project.service;
+package edu.yandex.project.integration;
 
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Mono;

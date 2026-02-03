@@ -12,6 +12,3 @@ spring:
     # main settings
     change-log: classpath:db/changelog/db.changelog-master-test.xml
     enabled: true
-
-  cache:
-    type: none

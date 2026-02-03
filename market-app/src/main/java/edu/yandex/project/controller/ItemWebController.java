@@ -30,7 +30,7 @@ public class ItemWebController {
     @GetMapping
     public Mono<Rendering> getItemsShowcase(@Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters) {
         log.info("ItemWebController::getItemsShowcase {} begins", requestParameters);
-        return itemService.findAll(requestParameters)
+        return itemService.findAllAsView(requestParameters)
                 .map(itemListPageView -> Rendering
                         .view(Views.ITEMS.getName())
                         .modelAttribute(ItemListPageView.Fields.items, itemListPageView.items())
@@ -48,7 +48,7 @@ public class ItemWebController {
     public Mono<Rendering> updateCartFromItemsShowcase(@Valid @NotNull @ModelAttribute CartItemAction cartItemAction,
                                                        @Valid @NotNull @ModelAttribute ItemsPageableRequest requestParameters) {
         log.info("ItemWebController::updateCartFromItemsShowcase {} begins", cartItemAction);
-        return cartService.updateCart(cartItemAction, requestParameters)
+        return cartService.updateCart(cartItemAction)
                 .thenReturn(Rendering
                         .redirectTo("/items?pageNumber={pageNumber}&pageSize={pageSize}&search={search}&sort={sort}")
                         .modelAttribute(ItemsPageableRequest.Fields.pageNumber, requestParameters.pageNumber())
@@ -66,7 +66,7 @@ public class ItemWebController {
     @GetMapping("/{itemId}")
     public Mono<Rendering> getItemView(@PathVariable Long itemId) {
         log.info("ItemWebController::getItemView {} begins", itemId);
-        return itemService.findOne(itemId)
+        return itemService.findOneAsView(itemId)
                 .map(itemView -> Rendering
                         .view(Views.ITEM.getName())
                         .modelAttribute("item", itemView)

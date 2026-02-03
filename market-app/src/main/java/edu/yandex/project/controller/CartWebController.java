@@ -4,7 +4,7 @@ import edu.yandex.project.controller.dto.CartItemAction;
 import edu.yandex.project.controller.dto.CartView;
 import edu.yandex.project.controller.util.Views;
 import edu.yandex.project.service.CartService;
-import edu.yandex.project.service.WalletService;
+import edu.yandex.project.integration.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

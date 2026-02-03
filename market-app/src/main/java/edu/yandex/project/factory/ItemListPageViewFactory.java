@@ -50,10 +50,6 @@ public class ItemListPageViewFactory {
         return built;
     }
 
-    public ItemListPageView create(@NonNull Tuple2<Page<ItemJoinCartPageView>, ItemsPageableRequest> viewWitRequest) {
-        return this.create(viewWitRequest.getT1(), viewWitRequest.getT2());
-    }
-
     /**
      * Дополняет последний список в списке заглушками для правильнгого отображения элементов во view
      * <p>

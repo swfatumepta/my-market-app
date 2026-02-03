@@ -1,9 +1,8 @@
-package edu.yandex.project.service.impl;
+package edu.yandex.project.integration;
 
 import edu.yandex.project.client.WalletApi;
 import edu.yandex.project.client.dto.BalanceChangeRequest;
 import edu.yandex.project.client.dto.BalanceResponse;
-import edu.yandex.project.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -13,7 +12,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WalletServiceImpl implements WalletService {
+public class WalletIntegrationService implements WalletService {
 
     private final WalletApi walletClient;
 

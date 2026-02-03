@@ -10,14 +10,13 @@ import edu.yandex.project.repository.OrderItemRepository;
 import edu.yandex.project.repository.OrderRepository;
 import edu.yandex.project.service.CartService;
 import edu.yandex.project.service.OrderService;
-import edu.yandex.project.service.WalletService;
+import edu.yandex.project.integration.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -32,38 +31,35 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
 
     private final CartService cartService;
+
     private final WalletService walletService;
 
     private final OrderItemViewMapper orderItemViewMapper;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Mono<OrderView> findOne(@NonNull Long orderId) {
-        log.debug("OrderServiceImpl::findOne {} in", orderId);
+        log.debug("OrderServiceImpl::findOneAsView {} in", orderId);
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(() -> {
-                    log.error("OrderServiceImpl::findOne {} not found", orderId);
+                    log.error("OrderServiceImpl::findOneAsView {} not found", orderId);
                     return new OrderNotFoundException(orderId);
                 }))
                 .flatMap(this::joinOrderItemAndMap)
-                .doOnSuccess(orderView -> log.debug("OrderServiceImpl::findOne {} out. Result: {}", orderId, orderView));
+                .doOnSuccess(orderView -> log.debug("OrderServiceImpl::findOneAsView {} out. Result: {}", orderId, orderView));
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Mono<List<OrderView>> findAll() {
-        log.debug("OrderServiceImpl::findAll in");
+        log.debug("OrderServiceImpl::findAllAsView in");
         return orderItemRepository.findAll()
                 .collectList()
                 .flatMap(this::joinOrderAndMap)
-                .doOnSuccess(orderViews -> log.debug("OrderServiceImpl::findAll out. Result: {}", orderViews));
+                .doOnSuccess(orderViews -> log.debug("OrderServiceImpl::findAllAsView out. Result: {}", orderViews));
     }
 
     @Override
-    @Caching(evict = {
-            @CacheEvict(value = "cartView", allEntries = true),
-            @CacheEvict(value = "showcase", allEntries = true)
-    })
     @Transactional
     public Mono<Long> create() {
         log.debug("OrderServiceImpl::create in");
@@ -74,20 +70,18 @@ public class OrderServiceImpl implements OrderService {
                     log.error("OrderServiceImpl::create Cart is empty");
                     return new GeneralProjectException("Cart is empty");
                 }))
-                .flatMap(cartView -> {
-                    // build order items (needed to compute order)
-                    var orderItems = cartView.items().stream()
-                            .map(OrderItem::fromItemViewWithEmptyOrder)
-                            .toList();
+                .flatMap(cartView -> Flux.fromIterable(cartView.items())
+                        .map(OrderItem::fromItemViewWithEmptyOrder)
+                        .collectList())
+                // build order items (needed to compute order)
+                .flatMap(orderItems -> {
                     // create and save new order
                     return orderRepository.save(Order.createNew(orderItems))
                             .flatMap(order -> {
                                 // enrich order_items with required order.id
                                 orderItems.forEach(orderItem -> orderItem.setOrderId(order.getId()));
                                 // save order_items
-                                return orderItemRepository.saveAll(orderItems)
-                                        .then()
-                                        .thenReturn(order);
+                                return orderItemRepository.saveAll(orderItems).then(Mono.just(order));
                             })
                             // withdraw money from wallet
                             .flatMap(order -> walletService.withdraw(order.getTotalCost())

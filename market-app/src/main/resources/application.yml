@@ -31,7 +31,7 @@ spring:
       password: ${VALKEY_PASSWORD:root}
   cache:
     redis:
-      time-to-live: PT3M
+      time-to-live: PT5M
 
 items:
   view:
@@ -46,10 +46,8 @@ logging:
   level:
     edu.yandex.project: DEBUG
 
-    org.springframework.web: DEBUG
-    org.springframework.web.servlet.DispatcherServlet: DEBUG
-    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter: DEBUG
-    org.springframework.web.servlet.view.RedirectView: DEBUG
+    org.springframework.web: INFO
+    org.springframework.web.reactive: DEBUG
 
     org.springframework.r2dbc.core: DEBUG
     io.r2dbc.postgresql.PARAM: DEBUG

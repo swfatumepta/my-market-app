@@ -4,6 +4,7 @@ import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
 import edu.yandex.project.domain.CartItem;
+import edu.yandex.project.domain.Item;
 import edu.yandex.project.exception.ItemNotFoundException;
 import edu.yandex.project.factory.ItemListPageViewFactory;
 import edu.yandex.project.mapper.ItemViewMapper;
@@ -13,12 +14,14 @@ import edu.yandex.project.repository.ItemRepository;
 import edu.yandex.project.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
@@ -33,37 +36,52 @@ public class ItemServiceImpl implements ItemService {
     private final ItemViewMapper itemViewMapper;
 
     @Override
-    @Cacheable(value = "showcase", key = "#pageableRequest")
-    @Transactional(readOnly = true)
-    public Mono<ItemListPageView> findAll(@NonNull ItemsPageableRequest pageableRequest) {
-        log.debug("ItemServiceImpl::findAll {} in", pageableRequest);
+    @Transactional
+    public Mono<ItemListPageView> findAllAsView(@NonNull ItemsPageableRequest pageableRequest) {
+        log.debug("ItemServiceImpl::findAllAsView {} in", pageableRequest);
         return itemPageableRepository.findAllWithCartCount(
                         pageableRequest.search(),
                         pageableRequest.sort().name(),
                         PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
                 )
-                .zipWith(Mono.just(pageableRequest))
-                .map(itemListPageViewFactory::create)
+                .map(page -> itemListPageViewFactory.create(page, pageableRequest))
                 .doOnSuccess(itemListPageView ->
-                        log.debug("ItemServiceImpl::findAll {} out. Result: {}", pageableRequest, itemListPageView)
+                        log.debug("ItemServiceImpl::findAllAsView {} out. Result: {}", pageableRequest, itemListPageView)
                 );
     }
 
     @Override
-    @Cacheable(value = "itemView", key = "#itemId")
-    @Transactional(readOnly = true)
-    public Mono<ItemView> findOne(@NonNull Long itemId) {
+    @Transactional
+    public Mono<ItemView> findOneAsView(@NonNull Long itemId) {
+        log.debug("ItemServiceImpl::findOneAsView {} in", itemId);
+        return itemRepository.findById(itemId)
+                .switchIfEmpty(Mono.error(() -> {
+                    log.error("ItemServiceImpl::findOneAsView {} not found", itemId);
+                    return new ItemNotFoundException(itemId);
+                }))
+                .zipWith(this.getInCartCount(itemId))
+                .map(itemViewMapper::fromTuple)
+                .doOnSuccess(itemView ->
+                        log.debug("ItemServiceImpl::findOneAsView {} out. Result: {}", itemId, itemView)
+                );
+    }
+
+    @Override
+    @Transactional
+    public Mono<Item> findOne(@NonNull Long itemId) {
         log.debug("ItemServiceImpl::findOne {} in", itemId);
         return itemRepository.findById(itemId)
                 .switchIfEmpty(Mono.error(() -> {
                     log.error("ItemServiceImpl::findOne {} not found", itemId);
                     return new ItemNotFoundException(itemId);
                 }))
-                .zipWith(this.getInCartCount(itemId))
-                .map(itemViewMapper::fromTuple)
-                .doOnSuccess(itemView ->
-                        log.debug("ItemServiceImpl::findOne {} out. Result: {}", itemId, itemView)
-                );
+                .doOnSuccess(found -> log.debug("ItemServiceImpl::findOne {} out. Result: {}", itemId, found));
+    }
+
+    @Override
+    @Transactional
+    public Flux<Item> findAll(@NonNull Collection<Long> itemIds) {
+        return itemRepository.findAllById(itemIds);
     }
 
     private Mono<Long> getInCartCount(Long itemId) {
