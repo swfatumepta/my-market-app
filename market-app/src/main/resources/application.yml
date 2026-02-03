@@ -30,8 +30,8 @@ spring:
       port: ${VALKEY_PORT:6379}
       password: ${VALKEY_PASSWORD:root}
   cache:
-    redis:
-      time-to-live: PT5M
+    item:
+      ttl: PT5M
 
 items:
   view:

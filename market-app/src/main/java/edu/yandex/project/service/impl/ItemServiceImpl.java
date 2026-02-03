@@ -1,5 +1,6 @@
 package edu.yandex.project.service.impl;
 
+import edu.yandex.project.cache.ItemCache;
 import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
@@ -34,6 +35,8 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final ItemPageableRepository itemPageableRepository;
 
+    private final ItemCache itemCache;
+
     private final ItemListPageViewFactory itemListPageViewFactory;
 
     private final ItemViewMapper itemViewMapper;
@@ -58,11 +61,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public Mono<ItemView> findOneAsView(@NonNull Long itemId) {
         log.debug("ItemServiceImpl::findOneAsView {} in", itemId);
-        return itemRepository.findById(itemId)
-                .switchIfEmpty(Mono.error(() -> {
-                    log.error("ItemServiceImpl::findOneAsView {} not found", itemId);
-                    return new ItemNotFoundException(itemId);
-                }))
+        return this.getCachedOrLoad(itemId)
                 .zipWith(this.getInCartCount(itemId))
                 .map(itemWithCount -> itemViewMapper.fromItemWithCount(itemWithCount.getT1(), itemWithCount.getT2()))
                 .doOnSuccess(itemView ->
@@ -74,11 +73,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public Mono<Item> findOne(@NonNull Long itemId) {
         log.debug("ItemServiceImpl::findOne {} in", itemId);
-        return itemRepository.findById(itemId)
-                .switchIfEmpty(Mono.error(() -> {
-                    log.error("ItemServiceImpl::findOne {} not found", itemId);
-                    return new ItemNotFoundException(itemId);
-                }))
+        return this.getCachedOrLoad(itemId)
                 .doOnSuccess(found -> log.debug("ItemServiceImpl::findOne {} out. Result: {}", itemId, found));
     }
 
@@ -86,6 +81,22 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public Flux<Item> findAll(@NonNull Collection<Long> itemIds) {
         return itemRepository.findAllById(itemIds);
+    }
+
+    private Mono<Item> getCachedOrLoad(long itemId) {
+        return itemCache.findById(itemId)
+                .switchIfEmpty(this.getFromDb(itemId)
+                        .flatMap(itemFromDb -> itemCache.putOne(itemFromDb)
+                                .thenReturn(itemFromDb))
+                );
+    }
+
+    private Mono<Item> getFromDb(long itemId) {
+        return itemRepository.findById(itemId)
+                .switchIfEmpty(Mono.error(() -> {
+                    log.error("ItemServiceImpl::getFromDb {} not found", itemId);
+                    return new ItemNotFoundException(itemId);
+                }));
     }
 
     private Mono<Long> getInCartCount(Long itemId) {
