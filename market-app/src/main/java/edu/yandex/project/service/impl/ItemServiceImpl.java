@@ -25,6 +25,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +85,31 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public Flux<Item> findAll(@NonNull Collection<Long> itemIds) {
-        return itemRepository.findAllById(itemIds);
+        log.debug("ItemServiceImpl::findAll {} in", itemIds);
+        return this.getCachedOrLoad(itemIds)
+                .doOnComplete(() -> log.debug("ItemServiceImpl::findAll {} out", itemIds));
+    }
+
+    private Flux<Item> getCachedOrLoad(Collection<Long> itemIds) {
+        log.debug("ItemServiceImpl::getCachedOrLoad {} in", itemIds);
+        if (itemIds.isEmpty()) {
+            log.debug("ItemServiceImpl::getCachedOrLoad {}. Result: []", itemIds);
+            return Flux.empty();
+        }
+        return itemCache.findAllById(itemIds)
+                .flatMapMany(cachedItems -> {
+                    var cachedFlux = Flux.fromIterable(cachedItems);
+
+                    var notCachedItemIds = getDiff(itemIds, cachedItems);
+                    if (!notCachedItemIds.isEmpty()) {
+                        log.debug("ItemServiceImpl::getCachedOrLoad {}. Items will be loaded from db: {}",
+                                itemIds, notCachedItemIds);
+                        var newCachedFlux = itemRepository.findAllById(notCachedItemIds)
+                                .flatMap(item -> itemCache.putOne(item).thenReturn(item));
+                        return Flux.merge(cachedFlux, newCachedFlux);
+                    }
+                    return cachedFlux;
+                });
     }
 
     private Mono<Item> getCachedOrLoad(long itemId) {
@@ -116,5 +145,14 @@ public class ItemServiceImpl implements ItemService {
                         .toList()
                 )
                 .map(itemViews -> new PageImpl<>(itemViews, itemsPage.getPageable(), itemsPage.getTotalElements()));
+    }
+
+    private static Set<Long> getDiff(Collection<Long> itemIds, Collection<Item> cachedItems) {
+        var cachedItemIds = cachedItems.stream()
+                .map(Item::getId)
+                .collect(Collectors.toSet());
+        return itemIds.stream()
+                .filter(id -> !cachedItemIds.contains(id))
+                .collect(Collectors.toSet());
     }
 }
