@@ -1,6 +1,8 @@
 package edu.yandex.project.service.impl;
 
 import edu.yandex.project.cache.ItemCache;
+import edu.yandex.project.cache.ItemPageableRequestCache;
+import edu.yandex.project.cache.util.ItemPage;
 import edu.yandex.project.controller.dto.ItemListPageView;
 import edu.yandex.project.controller.dto.ItemView;
 import edu.yandex.project.controller.dto.ItemsPageableRequest;
@@ -25,11 +27,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +40,7 @@ public class ItemServiceImpl implements ItemService {
     private final ItemPageableRepository itemPageableRepository;
 
     private final ItemCache itemCache;
+    private final ItemPageableRequestCache itemPageableRequestCache;
 
     private final ItemListPageViewFactory itemListPageViewFactory;
 
@@ -50,11 +50,9 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public Mono<ItemListPageView> findAllAsView(@NonNull ItemsPageableRequest pageableRequest) {
         log.debug("ItemServiceImpl::findAllAsView {} in", pageableRequest);
-        return itemPageableRepository.findAll(
-                        pageableRequest.search(),
-                        pageableRequest.sort(),
-                        PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize())
-                )
+        return itemPageableRequestCache.findByRequest(pageableRequest)
+                .map(itemPage -> map(pageableRequest, itemPage))
+                .switchIfEmpty(Mono.defer(() -> this.cacheAndGet(pageableRequest)))
                 .flatMap(this::enrichWithCartCountAndMap)
                 .map(page -> itemListPageViewFactory.create(page, pageableRequest))
                 .doOnSuccess(itemListPageView ->
@@ -105,7 +103,7 @@ public class ItemServiceImpl implements ItemService {
                         log.debug("ItemServiceImpl::getCachedOrLoad {}. Items will be loaded from db: {}",
                                 itemIds, notCachedItemIds);
                         var newCachedFlux = itemRepository.findAllById(notCachedItemIds)
-                                .flatMap(item -> itemCache.putOne(item).thenReturn(item));
+                                .flatMap(item -> itemCache.put(item).thenReturn(item));
                         return Flux.merge(cachedFlux, newCachedFlux);
                     }
                     return cachedFlux;
@@ -115,7 +113,7 @@ public class ItemServiceImpl implements ItemService {
     private Mono<Item> getCachedOrLoad(long itemId) {
         return itemCache.findById(itemId)
                 .switchIfEmpty(this.getFromDb(itemId)
-                        .flatMap(itemFromDb -> itemCache.putOne(itemFromDb)
+                        .flatMap(itemFromDb -> itemCache.put(itemFromDb)
                                 .thenReturn(itemFromDb))
                 );
     }
@@ -147,6 +145,18 @@ public class ItemServiceImpl implements ItemService {
                 .map(itemViews -> new PageImpl<>(itemViews, itemsPage.getPageable(), itemsPage.getTotalElements()));
     }
 
+    private Mono<Page<Item>> cacheAndGet(ItemsPageableRequest pageableRequest) {
+        return this.findAllAsPage(pageableRequest)
+                .flatMap(toBeCached -> itemPageableRequestCache.put(pageableRequest, toBeCached)
+                        .thenReturn(toBeCached));
+    }
+
+    private Mono<Page<Item>> findAllAsPage(ItemsPageableRequest pageableRequest) {
+        return itemPageableRepository.findAll(
+                pageableRequest.search(), pageableRequest.sort(), getPageable(pageableRequest)
+        );
+    }
+
     private static Set<Long> getDiff(Collection<Long> itemIds, Collection<Item> cachedItems) {
         var cachedItemIds = cachedItems.stream()
                 .map(Item::getId)
@@ -154,5 +164,13 @@ public class ItemServiceImpl implements ItemService {
         return itemIds.stream()
                 .filter(id -> !cachedItemIds.contains(id))
                 .collect(Collectors.toSet());
+    }
+
+    private static Page<Item> map(ItemsPageableRequest pageableRequest, ItemPage itemPage) {
+        return new PageImpl<>(itemPage.items(), getPageable(pageableRequest), itemPage.total());
+    }
+
+    private static PageRequest getPageable(ItemsPageableRequest pageableRequest) {
+        return PageRequest.of(pageableRequest.pageNumber(), pageableRequest.pageSize());
     }
 }

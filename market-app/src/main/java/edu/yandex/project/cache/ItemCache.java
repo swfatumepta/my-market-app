@@ -31,7 +31,7 @@ public class ItemCache {
     public Mono<Item> findById(@NonNull Long itemId) {
         log.debug("ItemCache::findById {} in", itemId);
         return itemReactiveRedisTemplate.opsForValue()
-                .get(toItemCacheId(itemId))
+                .get(this.toItemCacheId(itemId))
                 .doOnSuccess(fromCache -> log.debug("ItemCache::findById {} out. Result: {}", itemId, fromCache));
     }
 
@@ -53,7 +53,7 @@ public class ItemCache {
     public Mono<Void> put(@NonNull Item toBeCached) {
         log.debug("ItemCache::put {} in", toBeCached.getId());
         return itemReactiveRedisTemplate.opsForValue()
-                .set(toItemCacheId(toBeCached.getId()), toBeCached, cacheTTL)
+                .set(this.toItemCacheId(toBeCached.getId()), toBeCached, cacheTTL)
                 .doOnNext(success -> log.debug("ItemCache::put {}. Cached = {}", toBeCached.getId(), success))
                 .then()
                 .doOnSuccess(ignored -> log.debug("ItemCache::put {} out. Success", toBeCached.getId()));
