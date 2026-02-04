@@ -88,7 +88,8 @@ public class ItemWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
         var expectedMessages = MessageFormat.format(ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
         // when
         when(mockedItemRepository.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());
-        when(mockedCartItemRepository.findCartItemByItemId(NON_EXISTENT_ID)).thenReturn(Mono.empty());
+        when(mockedItemCache.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());   // not found in cache
+        when(mockedCartItemRepository.findCartItemByItemId(NON_EXISTENT_ID)).thenReturn(Mono.empty());   // not found in db
 
         webTestClient.get()
                 .uri(ITEMS_ROOT + "/" + NON_EXISTENT_ID)

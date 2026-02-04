@@ -1,5 +1,7 @@
 package edu.yandex.project.integration.exception.handler;
 
+import edu.yandex.project.cache.ItemCache;
+import edu.yandex.project.cache.ItemPageableRequestCache;
 import edu.yandex.project.controller.CartWebController;
 import edu.yandex.project.controller.ItemWebController;
 import edu.yandex.project.controller.OrderWebController;
@@ -7,10 +9,10 @@ import edu.yandex.project.exception.ItemNotFoundException;
 import edu.yandex.project.exception.OrderNotFoundException;
 import edu.yandex.project.exception.handler.GlobalWebExceptionHandler;
 import edu.yandex.project.factory.ItemListPageViewFactory;
+import edu.yandex.project.integration.WalletIntegrationService;
 import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.mapper.OrderItemViewMapper;
 import edu.yandex.project.repository.*;
-import edu.yandex.project.integration.WalletService;
 import edu.yandex.project.service.impl.CartServiceImpl;
 import edu.yandex.project.service.impl.ItemServiceImpl;
 import edu.yandex.project.service.impl.OrderServiceImpl;
@@ -66,5 +68,10 @@ public abstract class AbstractGlobalWebExceptionHandlerIT {
     protected OrderItemViewMapper mockedOrderItemViewMapper;
 
     @MockitoBean
-    protected WalletService mockedWalletService;
+    protected WalletIntegrationService mockedWalletIntegrationService;
+
+    @MockitoBean
+    protected ItemCache mockedItemCache;
+    @MockitoBean
+    protected ItemPageableRequestCache mockedItemPageableRequestCache;
 }

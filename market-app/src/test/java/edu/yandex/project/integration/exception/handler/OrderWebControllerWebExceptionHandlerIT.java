@@ -58,6 +58,7 @@ public class OrderWebControllerWebExceptionHandlerIT extends AbstractGlobalWebEx
                     assertThat(html).contains(expectedMessages);
                 });
 
+        verifyNoInteractions(mockedWalletIntegrationService);
         verifyNoInteractions(mockedOrderRepository);
         verify(mockedCartRepository, never()).save(any());
     }

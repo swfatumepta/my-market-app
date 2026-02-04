@@ -6,7 +6,6 @@ import edu.yandex.project.domain.Cart;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.web.reactive.function.BodyInserters.fromFormData;
 
 @Tag("CartWebControllerExceptionHandlerIT")
 public class CartWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExceptionHandlerIT {
@@ -26,7 +26,7 @@ public class CartWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
         var viewIdentifyingText = "500 - INTERNAL_SERVER_ERROR";
         var expectedMessages = "More than one cart found";
         // when
-        when(mockedWalletService.getBalance()).thenReturn(Mono.just(1L));
+        when(mockedWalletIntegrationService.getBalance()).thenReturn(Mono.just(1L));
         when(mockedCartRepository.findAll()).thenReturn(Flux.fromIterable(List.of(new Cart(), new Cart())));
 
         webTestClient.get()
@@ -50,14 +50,14 @@ public class CartWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
         var expectedMessages = MessageFormat.format(ITEM_NOT_FOUND_ERROR_MESSAGE_PATTERN, NON_EXISTENT_ID);
         // when
         when(mockedCartRepository.findAll()).thenReturn(Flux.just(new Cart()));
-        when(mockedItemRepository.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());
+        when(mockedItemCache.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());   // not found in cache
+        when(mockedItemRepository.findById(NON_EXISTENT_ID)).thenReturn(Mono.empty());  // not found in db
 
         webTestClient.post()
                 .uri(CART_ROOT)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(CartItemAction.Fields.action, CartAction.PLUS.toString())
-                        .with("id", NON_EXISTENT_ID.toString())
-                )
+                .body(fromFormData(CartItemAction.Fields.action, CartAction.PLUS.toString())
+                        .with("id", NON_EXISTENT_ID.toString()))
                 .exchange()
                 // then
                 .expectStatus().isNotFound()
@@ -78,7 +78,7 @@ public class CartWebControllerWebExceptionHandlerIT extends AbstractGlobalWebExc
         webTestClient.post()
                 .uri(CART_ROOT)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(CartItemAction.Fields.action, "HOW_ARE_YOU")
+                .body(fromFormData(CartItemAction.Fields.action, "HOW_ARE_YOU")
                         .with("id", NON_EXISTENT_ID.toString()))
                 .exchange()
                 // then

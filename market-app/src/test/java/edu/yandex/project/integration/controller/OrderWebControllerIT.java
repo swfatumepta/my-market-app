@@ -131,6 +131,7 @@ public class OrderWebControllerIT extends AbstractControllerIT {
 
     private void placeAnOrder() {
         // when
+        when(mockedWalletClient.getBalance()).thenReturn(Mono.just(new BalanceResponse().balance(Long.MAX_VALUE)));
         when(mockedWalletClient.withdraw(any())).thenReturn(Mono.just(new BalanceResponse().balance(Long.MAX_VALUE)));
 
         webTestClient.post()

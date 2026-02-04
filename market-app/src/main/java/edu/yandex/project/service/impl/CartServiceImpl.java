@@ -156,6 +156,9 @@ public class CartServiceImpl implements CartService {
     }
 
     private Mono<CartView> checkWallet(@NonNull CartView cartView) {
+        if (cartView.items().isEmpty()) {   // => stub response for empty cart
+            return Mono.just(cartView);
+        }
         return walletIntegrationService.getBalance()
                 .map(currentBalance -> CartView.withHasMoney(cartView, currentBalance > cartView.total()));
     }
