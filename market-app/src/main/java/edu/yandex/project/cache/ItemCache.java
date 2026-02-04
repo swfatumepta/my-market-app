@@ -20,9 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ItemCache {
-    private final static String CACHE_KEY_PREFIX = "item:";
 
-    @Value("${spring.cache.item.ttl:PT2M}")
+    @Value("${spring.cache.item.name}")
+    private String cacheKeyPrefix;
+    @Value("${spring.cache.item.ttl}")
     private Duration cacheTTL;
 
     private final ReactiveRedisTemplate<String, Item> itemReactiveRedisTemplate;
@@ -49,22 +50,22 @@ public class ItemCache {
                 );
     }
 
-    public Mono<Void> putOne(@NonNull Item toBeCached) {
-        log.debug("ItemCache::putOne {} in", toBeCached.getId());
+    public Mono<Void> put(@NonNull Item toBeCached) {
+        log.debug("ItemCache::put {} in", toBeCached.getId());
         return itemReactiveRedisTemplate.opsForValue()
                 .set(toItemCacheId(toBeCached.getId()), toBeCached, cacheTTL)
-                .doOnNext(success -> log.debug("ItemCache::putOne {}. Cached = {}", toBeCached.getId(), success))
+                .doOnNext(success -> log.debug("ItemCache::put {}. Cached = {}", toBeCached.getId(), success))
                 .then()
-                .doOnSuccess(ignored -> log.debug("ItemCache::putOne {} out. Success", toBeCached.getId()));
+                .doOnSuccess(ignored -> log.debug("ItemCache::put {} out. Success", toBeCached.getId()));
     }
 
     private Set<String> toItemCacheIds(Collection<Long> itemIds) {
         return itemIds.stream()
-                .map(ItemCache::toItemCacheId)
+                .map(this::toItemCacheId)
                 .collect(Collectors.toSet());
     }
 
-    private static String toItemCacheId(Long itemId) {
-        return CACHE_KEY_PREFIX + itemId;
+    private String toItemCacheId(Long itemId) {
+        return cacheKeyPrefix + itemId;
     }
 }

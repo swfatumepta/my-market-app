@@ -31,7 +31,11 @@ spring:
       password: ${VALKEY_PASSWORD:root}
   cache:
     item:
+      name: "item:"
       ttl: PT5M
+    item-page:
+      name: "item:page:"
+      ttl: ${spring.cache.item.ttl}
 
 items:
   view:

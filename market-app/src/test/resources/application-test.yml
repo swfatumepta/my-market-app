@@ -12,3 +12,11 @@ spring:
     # main settings
     change-log: classpath:db/changelog/db.changelog-master-test.xml
     enabled: true
+
+  cache:
+    item:
+      name: "item:"
+      ttl: PT1M
+    item-page:
+      name: "item:page:"
+      ttl: ${spring.cache.item.ttl}
