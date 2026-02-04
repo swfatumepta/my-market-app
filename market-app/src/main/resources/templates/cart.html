@@ -60,7 +60,7 @@
         </div>
     </div>
     <!-- Недостаточно средств -->
-    <div class="row p-2" th:if="${HAS_ENOUGH_MONEY != null and !HAS_ENOUGH_MONEY}">
+    <div class="row p-2" th:if="${!hasMoney}">
         <div class="col">
             <div class="alert alert-danger d-flex align-items-center" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -75,7 +75,7 @@
                 <div class="hstack gap-3">
                     <h2 th:text="'Итого: '+${total}+' руб.'"/>
                     <button class="btn btn-warning ms-auto"
-                            th:disabled="${HAS_ENOUGH_MONEY != null and !HAS_ENOUGH_MONEY}">
+                            th:disabled="${!hasMoney}">
                         Купить
                     </button>
                 </div>

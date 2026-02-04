@@ -6,6 +6,7 @@ import edu.yandex.project.domain.Cart;
 import edu.yandex.project.domain.CartItem;
 import edu.yandex.project.domain.Item;
 import edu.yandex.project.exception.GeneralProjectException;
+import edu.yandex.project.integration.WalletIntegrationService;
 import edu.yandex.project.mapper.ItemViewMapper;
 import edu.yandex.project.repository.CartItemRepository;
 import edu.yandex.project.repository.CartRepository;
@@ -33,6 +34,8 @@ public class CartServiceImpl implements CartService {
 
     private final ItemService itemService;
 
+    private final WalletIntegrationService walletIntegrationService;
+
     private final ItemViewMapper itemViewMapper;
 
     @Override
@@ -42,6 +45,7 @@ public class CartServiceImpl implements CartService {
         return this.getCart().flatMap(cart -> cartItemRepository.findAllByCartId(cart.getId())
                 .collectList()
                 .flatMap(this::joinItemAndMap)
+                .flatMap(this::checkWallet)
                 .doOnSuccess(cartView -> log.debug("CartServiceImpl::getCartContent out. Result: {}", cartView))
         );
     }
@@ -149,6 +153,11 @@ public class CartServiceImpl implements CartService {
         log.info("CartServiceImpl::deleteCart begins");
         return cartRepository.deleteAll()
                 .doOnSuccess(ignored -> log.info("CartServiceImpl::deleteCart ends successful"));
+    }
+
+    private Mono<CartView> checkWallet(@NonNull CartView cartView) {
+        return walletIntegrationService.getBalance()
+                .map(currentBalance -> CartView.withHasMoney(cartView, currentBalance > cartView.total()));
     }
 
     private static CartItem.CartItemCompositeId buildId(@NonNull Tuple2<Cart, Item> tuple) {
