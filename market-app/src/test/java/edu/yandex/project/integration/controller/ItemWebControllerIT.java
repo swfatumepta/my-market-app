@@ -11,15 +11,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
+import reactor.test.StepVerifier;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.text.MessageFormat;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @Tag("ItemWebControllerIT")
 public class ItemWebControllerIT extends AbstractControllerIT {
@@ -34,6 +36,10 @@ public class ItemWebControllerIT extends AbstractControllerIT {
             var expectedItems = getItemJoinCartPageViews(defaultQuery);
             assertThat(expectedItems).hasSize(defaultQuery.pageSize());
 
+            var expectedCacheKey = MessageFormat.format(
+                    itemPageCacheKeyPrefix + itemPageCacheKeyPattern,
+                    defaultQuery.search(), defaultQuery.pageNumber(), defaultQuery.pageSize(), defaultQuery.sort()
+            );
             var toBeChecked = DynamicParametersToBeChecked.from(expectedItems);
             // when
             webTestClient.get()
@@ -57,6 +63,22 @@ public class ItemWebControllerIT extends AbstractControllerIT {
                         validateItemInCartSign(htmlView, false);
                         validateShowcaseDynamicParameters(htmlView, toBeChecked);
                     });
+            // cache interactions
+            // send the same request again (must retrieve data from cache)
+            webTestClient.get()
+                    .uri(ITEMS_ROOT)
+                    .exchange()
+                    .expectStatus().isOk()
+                    .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                    .expectBody(String.class);
+
+            verify(itemPageableRequestCacheSpy, times(2)).findByRequest(defaultQuery);
+            verify(itemCacheSpy, times(defaultQuery.pageSize())).put(any());
+            verify(itemPageableRequestCacheSpy, times(1)).put(any(), any());
+
+            StepVerifier.create(itemReactiveRedisTemplate.hasKey(expectedCacheKey))
+                    .expectNext(true)
+                    .verifyComplete();
         }
 
         @Test
@@ -67,6 +89,14 @@ public class ItemWebControllerIT extends AbstractControllerIT {
 
             var expectedItem = getItemJoinCartPageViews(queryWithSearchFilter);
             assertThat(expectedItem).hasSize(1);
+
+            var expectedCacheKey = MessageFormat.format(
+                    itemPageCacheKeyPrefix + itemPageCacheKeyPattern,
+                    queryWithSearchFilter.search(),
+                    queryWithSearchFilter.pageNumber(),
+                    queryWithSearchFilter.pageSize(),
+                    queryWithSearchFilter.sort()
+            );
 
             var toBeChecked = DynamicParametersToBeChecked.from(expectedItem);
             // when
@@ -88,6 +118,15 @@ public class ItemWebControllerIT extends AbstractControllerIT {
                         validateItemInCartSign(htmlView, false);
                         validateShowcaseDynamicParameters(htmlView, toBeChecked);
                     });
+            // cache interactions
+            // send the same request again (must retrieve data from cache)
+            verify(itemPageableRequestCacheSpy, times(1)).findByRequest(queryWithSearchFilter);
+            verify(itemCacheSpy, times(1)).put(any());
+            verify(itemPageableRequestCacheSpy, times(1)).put(any(), any());
+
+            StepVerifier.create(itemReactiveRedisTemplate.hasKey(expectedCacheKey))
+                    .expectNext(true)
+                    .verifyComplete();
         }
 
         @Test

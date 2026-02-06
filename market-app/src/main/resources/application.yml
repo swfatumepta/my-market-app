@@ -34,6 +34,7 @@ spring:
       name: "item:"
       ttl: PT5M
     item-page:
+      key-pattern: "s{0}pN{1}pS{2}s{3}"
       name: "item:page:"
       ttl: ${spring.cache.item.ttl}
 

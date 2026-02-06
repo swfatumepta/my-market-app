@@ -21,8 +21,9 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Slf4j
 public class ItemPageableRequestCache {
-    private final static String CACHE_KEY_PATTERN = "s{0}pN{1}pS{2}s{3}";
 
+    @Value("${spring.cache.item-page.key-pattern}")
+    private String cacheKeyPattern;
     @Value("${spring.cache.item-page.name}")
     private String cacheKeyPrefix;
     @Value("${spring.cache.item-page.ttl}")
@@ -61,13 +62,17 @@ public class ItemPageableRequestCache {
 
     private Mono<ItemPage> getItemsAndMap(CachedItemPage cachedItemPage) {
         return itemCache.findAllById(cachedItemPage.itemIds())
-                .map(itemsFromCache -> new ItemPage(itemsFromCache, cachedItemPage.total()));
+                .map(itemsFromCache -> new ItemPage(itemsFromCache, cachedItemPage.total()))
+                .doOnSuccess(itemPage -> log.debug("ItemPageableRequestCache::getItemsAndMap result: {}", itemPage));
     }
 
     private String toItemCacheId(ItemsPageableRequest request) {
-        return MessageFormat.format(
-                cacheKeyPrefix + CACHE_KEY_PATTERN,
+        log.debug("ItemPageableRequestCache::toItemCacheId {} in", request);
+        var key = MessageFormat.format(
+                cacheKeyPrefix + cacheKeyPattern,
                 request.search(), request.pageNumber(), request.pageSize(), request.sort()
         );
+        log.debug("ItemPageableRequestCache::toItemCacheId {} out. Result: {}", request, key);
+        return key;
     }
 }

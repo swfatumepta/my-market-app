@@ -29,6 +29,8 @@
 
         <testcontainers-bom.version>2.0.3</testcontainers-bom.version>
 
+        <reactor-test.version>3.6.0</reactor-test.version>
+
         <openapi-generator-maven-plugin.version>7.16.0</openapi-generator-maven-plugin.version>
         <spring-boot-maven-plugin.version>${spring.boot.version}</spring-boot-maven-plugin.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
@@ -74,6 +76,12 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-test</artifactId>
+                <version>${reactor-test.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

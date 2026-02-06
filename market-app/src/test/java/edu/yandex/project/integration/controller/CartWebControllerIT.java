@@ -9,11 +9,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @Tag("ItemWebControllerIT")
 public class CartWebControllerIT extends AbstractControllerIT {
@@ -35,6 +37,8 @@ public class CartWebControllerIT extends AbstractControllerIT {
                 .expectStatus().isOk()
                 .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
                 .expectBody(String.class).value(CartWebControllerIT::validateEmptyCart);
+
+        verifyNoInteractions(mockedWalletClient);   // if cart is empty, app must not send request to wallet-service
     }
 
     @Test
@@ -72,6 +76,15 @@ public class CartWebControllerIT extends AbstractControllerIT {
         assertThat(cartItem.getTotalCost()).isEqualTo(item.getPrice() * 2);
         assertThat(cartItem.getId().itemId()).isEqualTo(item.getId());
         assertThat(cartItem.getId().cartId()).isNotNull();
+        // cache interactions
+        verify(itemCacheSpy, times(1)).findAllById(eq(Set.of(item.getId())));
+        verify(itemCacheSpy, times(1)).put(eq(item));
+
+        StepVerifier.create(itemReactiveRedisTemplate.hasKey(itemCacheKeyPrefix + item.getId()))
+                .expectNext(true)
+                .verifyComplete();
+        // integration interactions
+        verify(mockedWalletClient, times(1)).getBalance();
     }
 
     @Test
@@ -131,6 +144,24 @@ public class CartWebControllerIT extends AbstractControllerIT {
             assertThat(cartItem.getItemCount()).isEqualTo(cartItemItemId);
             assertThat(cartItem.getTotalCost()).isEqualTo(sourceItem.getPrice() * sourceItem.getId());
         });
+        // cache interactions
+        verify(itemCacheSpy, times(1)).findAllById(eq(itemIds));
+        verify(itemCacheSpy, times(3)).put(any());
+
+        StepVerifier.create(itemReactiveRedisTemplate.opsForValue()
+                        .multiGet(itemIds.stream()
+                                .map(itemId -> itemCacheKeyPrefix + itemId)
+                                .collect(Collectors.toSet())))
+                .assertNext(cachedItems -> {
+                    assertThat(cachedItems).isNotEmpty();
+                    assertThat(cachedItems.size()).isEqualTo(3);
+                    assertThat(cachedItems.stream()
+                            .map(Item::getId)
+                            .collect(Collectors.toSet()) ).containsAll(itemIds);
+                })
+                .verifyComplete();
+        // integration interactions
+        verify(mockedWalletClient, times(1)).getBalance();
     }
 
     @Test
@@ -154,6 +185,8 @@ public class CartWebControllerIT extends AbstractControllerIT {
         var cartItems = getCartItems();
         assertThat(cartItems).isEmpty();
         assertThat(cartRepository.count().block()).isEqualTo(1);    // cart must not be deleted
+
+        verifyNoInteractions(mockedWalletClient);   // if cart is empty, app must not send request to wallet-service
     }
 
     @Test
