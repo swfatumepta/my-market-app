@@ -1,13 +1,20 @@
 services:
+
   market-app:
-    build: .
+    build:
+      context: market-app
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
       - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/ya_market
       - SPRING_JDBC_URL=jdbc:postgresql://postgres:5432/ya_market
-      - SPRING_DBC_USERNAME=root
-      - SPRING_DBC_PASSWORD=root
-      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+      - SPRING_DBC_USERNAME=${DEV_USERNAME}
+      - SPRING_DBC_PASSWORD=${DEV_PASSWORD}
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
+      - VALKEY_PASSWORD=${DEV_PASSWORD}
+      - WALLET_APP=wallet-app
     ports:
       - "8080:8080"
       - "8000:8000"
@@ -15,18 +22,47 @@ services:
       - ftmpt-market
     depends_on:
       - postgres
+      - valkey
+
+  wallet-app:
+    build:
+      context: wallet-app
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+    ports:
+      - "8081:8081"
+      - "8001:8001"
+    networks:
+      - ftmpt-market
+    depends_on:
+      - market-app
 
   postgres:
     image: postgres:16.11-alpine3.22
     restart: unless-stopped
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
+      POSTGRES_USER: ${DEV_USERNAME}
+      POSTGRES_PASSWORD: ${DEV_PASSWORD}
       POSTGRES_DB: ya_market
     ports:
       - "5433:5432"
     volumes:
       - ./db_data:/var/lib/postgresql/data
+    networks:
+      - ftmpt-market
+
+  valkey:
+    image: valkey/valkey:8.1.5-alpine3.23
+    restart: unless-stopped
+    command: >-
+      valkey-server
+      --requirepass ${DEV_PASSWORD}
+      --maxmemory 128mb
+      --save ""
+    ports:
+      - "6379:6379"
     networks:
       - ftmpt-market
 

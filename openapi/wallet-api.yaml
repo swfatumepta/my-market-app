@@ -1,0 +1,125 @@
+openapi: 3.0.3
+
+info:
+  title: Wallet API
+  description: Simple reactive wallet service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8085
+
+tags:
+  - name: wallet
+    description: Wallet operations
+
+paths:
+  /wallet/balance:
+    get:
+      tags: [ wallet ]
+      summary: Get wallet balance
+      operationId: getBalance
+      responses:
+        '200':
+          description: Current wallet balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+
+  /wallet/deposit:
+    post:
+      tags: [ wallet ]
+      summary: Deposit money to wallet
+      operationId: deposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalanceChangeRequest'
+      responses:
+        '200':
+          description: Balance after deposit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wallet/withdraw:
+    post:
+      tags: [ wallet ]
+      summary: Withdraw money from wallet
+      operationId: withdraw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalanceChangeRequest'
+      responses:
+        '200':
+          description: Balance after withdraw
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+
+    BalanceChangeRequest:
+      type: object
+      description: Request to change wallet balance
+      required:
+        - amount
+      properties:
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 100
+          description: Amount to add or subtract from balance
+
+    BalanceResponse:
+      type: object
+      description: Wallet balance
+      required:
+        - balance
+      properties:
+        balance:
+          type: integer
+          format: int64
+          example: 1000
+
+    ErrorResponse:
+      type: object
+      description: Error response
+      required:
+        - message
+        - status
+      properties:
+        message:
+          type: string
+          example: Insufficient funds -> balance = 50; withdraw = 100
+        status:
+          type: integer
+          format: int32
+          example: 409
